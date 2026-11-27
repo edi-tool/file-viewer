@@ -24,7 +24,7 @@ jobs:
       - run: bash scripts/build-jtd.sh
       - run: node scripts/preview-build.mjs --full
       - run: node scripts/verify-distribution.mjs
-      - run: npx playwright install chromium
+      - run: npx playwright install --with-deps chromium
       - name: Test the exact distribution at Pages subpath
         run: |
           mkdir -p /tmp/viewer-site
