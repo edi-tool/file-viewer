@@ -5,6 +5,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 temp="$(mktemp -d)"
 trap 'rm -rf "$temp"' EXIT
 git clone --depth 1 --branch v0.5.14 https://github.com/ezpzfile/ezpzfile-jtd.git "$temp/jtd"
+test "$(git -C "$temp/jtd" rev-parse HEAD)" = "454c445a48ec9c3b5b2db4e9e44711d10ff45fcf"
 cd "$temp/jtd/engine"
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.129 --locked

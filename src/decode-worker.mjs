@@ -1,6 +1,7 @@
 import {dimensions} from './limits.mjs';
 import {epsSections} from './probe.mjs';
 import {epsBoundingBox} from './eps.mjs';
+import {guardTiff} from './tiff-guard.mjs';
 function classic(url){return import(url);}
 async function psDecode(buffer,limits){
  const {width,height}=epsBoundingBox(buffer,limits);
@@ -26,9 +27,10 @@ async function decode({buffer,probe,limits}){
  }
  if(probe.route==='tiff'||probe.route==='eps'){
   let bytes=buffer;
-  if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff)throw new Error('埋め込みTIFFプレビューがありません。');bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
+  if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff)return psDecode(buffer.slice(s.postscript.offset,s.postscript.offset+s.postscript.length),limits);bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
+  guardTiff(bytes,limits);
   const {default:UTIF}=await classic('../vendor/tiff.mjs');
-  const ifds=UTIF.decode(bytes);if(!ifds.length)throw new Error('TIFFページがありません。');
+  const ifds=UTIF.decode(bytes,{parseMN:false,debug:false});if(!ifds.length)throw new Error('TIFFページがありません。');
   const ifd=ifds[0];const {width,height}=dimensions(Number(ifd.t256?.[0]),Number(ifd.t257?.[0]),limits);
   const samples=Number(ifd.t277?.[0]??1),bits=ifd.t258||[1];
   if(!Number.isInteger(samples)||samples<1||samples>4||bits.some(x=>![1,2,4,8,16].includes(Number(x))))throw new Error('未対応のTIFFサンプル形式です。');
@@ -38,7 +40,7 @@ async function decode({buffer,probe,limits}){
  }
  if(probe.route==='jtd'){
   const {default:init,JtdDocument}=await import('../vendor/jtd/ezpzjtd_wasm.js');await init();
-  const doc=JtdDocument.withLimits(new Uint8Array(buffer),JSON.stringify({maxBytes:limits.maxBytes,maxTextUnits:2_000_000,maxPages:limits.maxPages,maxSheets:100,maxExpand:4}));try{const text=doc.text();if(text.length>2_000_000)throw new Error('本文が表示上限を超えています。');return {text};}finally{doc.free();}
+  const doc=JtdDocument.withLimits(new Uint8Array(buffer),JSON.stringify({maxBytes:limits.maxBytes,maxTextUnits:2_000_000,maxPages:limits.maxPages,maxSheets:64,maxExpand:4,maxStyleEntries:500_000}));try{const text=doc.text();if(text.length>2_000_000)throw new Error('本文が表示上限を超えています。');return {text};}finally{doc.free();}
  }
  throw new Error('未対応形式です。');
 }

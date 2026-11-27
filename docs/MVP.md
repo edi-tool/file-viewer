@@ -5,3 +5,6 @@
 
 ## EPS・JTDの追加接続（CI検証待ち）
 pscat@0.7.1 の core.js と wasm を利用。maxSteps 200万、Worker 15秒。原点0・単ページ・整数BoundingBoxのEPS本体を試験対応。DOS EPSは埋込TIFF優先。フォント通知・配布ライセンスを確認。非ゼロ原点、PS一般、実AIのEPSは未対応。JTDは v0.5.14 を開発時にWASMビルドし、withLimitsで本文のみ表示、合成文書のラウンドトリップ試験をCIで実行する。Rust推移依存のライセンス監査・固定commitの照合は配布前に必要。初期説明の「未実装」はこの追記で更新。
+
+## 安全性の追加
+TIFFは初期版では非入れ子・非タイル・非RAW・非JPEG/Deflate・インターリーブ形式に制限し、IFD、タグ件数、オフセット、ストリップ長を事前確認。LZW/PackBitsの実画像検証は別途必要。PDFの読み込み・描画に暫定15秒タイマーを追加。JTD v0.5.14のcommit 454c445a48ec9c3b5b2db4e9e44711d10ff45fcf をビルド前に照合。30MiB等の上限は開発用暫定値。

@@ -13,7 +13,7 @@ async function pdfOpen(file,kind,{signal,limits}){
  signal.throwIfAborted();pdfLib.GlobalWorkerOptions.workerSrc=new URL('pdf.worker.min.mjs',base).href;
  const data=new Uint8Array(await file.arrayBuffer());signal.throwIfAborted();
  const task=pdfLib.getDocument({data,cMapUrl:new URL('cmaps/',base).href,cMapPacked:true,standardFontDataUrl:new URL('standard_fonts/',base).href,wasmUrl:new URL('wasm/',base).href,iccUrl:new URL('iccs/',base).href,isEvalSupported:false,enableXfa:false,stopAtErrors:true,maxImageSize:limits.maxPixels,canvasMaxAreaInBytes:limits.maxPixels*4,useWorkerFetch:true});
- let destroyed=false;const dispose=()=>{if(!destroyed){destroyed=true;void task.destroy().catch(()=>{});}};const cancel=()=>dispose();signal.addEventListener('abort',cancel,{once:true});let encrypted=false;task.onPassword=()=>{encrypted=true;dispose();};
+ let destroyed=false;const dispose=()=>{if(!destroyed){destroyed=true;void task.destroy().catch(()=>{});}};const cancel=()=>dispose();signal.addEventListener('abort',cancel,{once:true});let expired=false;const timer=setTimeout(()=>{expired=true;dispose();},limits.timeoutMs);let encrypted=false;task.onPassword=()=>{encrypted=true;dispose();};
  try{
   if(signal.aborted)dispose();
   const doc=await task.promise;signal.throwIfAborted();pageCheck(doc.numPages,limits);
@@ -24,10 +24,10 @@ async function pdfOpen(file,kind,{signal,limits}){
   return {mode:kind==='ai-pdf-candidate'?modes.ai:modes.pdf,pageCount:doc.numPages,warnings:['画面用RGB表示です。AIはPDF部分のみ。非互換案内の検出は完全ではありません。'],dispose,async renderPage(index,{scale,signal}){
    const page=await doc.getPage(index+1);signal.throwIfAborted();const vp=page.getViewport({scale:1});const {width,height}=fit(vp.width,vp.height,scale,limits);
    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const viewport=page.getViewport({scale:width/vp.width});
-   let rendering;const abort=()=>rendering?.cancel();signal.addEventListener('abort',abort,{once:true});
-   try{rendering=page.render({canvas,canvasContext:canvas.getContext('2d'),viewport,annotationMode:pdfLib.AnnotationMode.DISABLE,background:'#fff'});if(signal.aborted)rendering.cancel();await rendering.promise;signal.throwIfAborted();return {element:canvas,dispose(){canvas.width=canvas.height=0;canvas.remove();}};}catch(e){canvas.width=canvas.height=0;throw e;}finally{signal.removeEventListener('abort',abort);page.cleanup();}
+   let rendering,expired=false;const abort=()=>rendering?.cancel();const timer=setTimeout(()=>{expired=true;abort();},limits.timeoutMs);signal.addEventListener('abort',abort,{once:true});
+   try{rendering=page.render({canvas,canvasContext:canvas.getContext('2d'),viewport,annotationMode:pdfLib.AnnotationMode.DISABLE,background:'#fff'});if(signal.aborted)rendering.cancel();await rendering.promise;signal.throwIfAborted();return {element:canvas,dispose(){canvas.width=canvas.height=0;canvas.remove();}};}catch(e){canvas.width=canvas.height=0;if(expired)throw new Error('PDF描画時間の上限を超えました。');throw e;}finally{clearTimeout(timer);signal.removeEventListener('abort',abort);page.cleanup();}
   }};
- }catch(e){dispose();if(encrypted)throw new Error('パスワード付きPDFは未対応です。');throw e;}finally{signal.removeEventListener('abort',cancel);}
+ }catch(e){dispose();if(encrypted)throw new Error('パスワード付きPDFは未対応です。');if(expired)throw new Error('PDFの読み込み時間の上限を超えました。');throw e;}finally{clearTimeout(timer);signal.removeEventListener('abort',cancel);}
 }
 function workerCall(file,probe,signal,limits){
  return new Promise((resolve,reject)=>{
