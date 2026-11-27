@@ -1,7 +1,7 @@
 import {fit,dimensions,pageCheck} from './limits.mjs';
 // Experimental PGF path. Keep PDF-compatible rendering as the default.
 async function engineFor(limits){
- let sdk;try{sdk=await import('../vendor/illustrator/engine.mjs');}catch{throw Error('Illustratorネイティブ描画ライブラリが準備されていません。');}
+ let sdk;try{sdk=await import('../vendor/illustrator/engine.mjs');}catch{throw Error('Illustratorネイティブ描画資産の読み込みに失敗しました。配布版のビルド・更新状態をご確認ください。PDF互換AIの場合はPDF優先を選択してください。');}
  return sdk.createIllustratorEngine({workerFactory:()=>new Worker(new URL('../vendor/illustrator/worker.mjs',import.meta.url),{type:'module'}),defaultTimeoutMs:limits.timeoutMs,limits:{maxFileBytes:limits.maxBytes,maxDecodedBytes:32*1024*1024,maxPdfObjects:50000,maxPrivateBlocks:2048,maxTokens:300000,maxStatements:100000,maxNodes:50000,maxPathPoints:200000,maxNesting:64,maxStringBytes:2*1024*1024,maxSingleRasterPixels:limits.maxPixels,maxTotalRasterBytes:32*1024*1024,maxWorkerTimeMs:limits.timeoutMs,maxRenderPixels:limits.maxPixels,maxCacheBytes:8*1024*1024}});
 }
 async function withDocument(file,signal,limits,fn){
