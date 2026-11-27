@@ -13,3 +13,5 @@ TIFFは初期版では非入れ子・非タイル・非RAW・非JPEG/Deflate・�
 
 ## 再現可能なローカルプレビュー
 `npm ci --ignore-scripts && npm run vendor` の後、必要なら `bash scripts/build-jtd.sh`、次に `npm run preview`。dist-previewは開発用・noindex。GitHub Pagesへの自動デプロイは行わない。公開前に全CI、実ファイル比較、推移依存のライセンス監査、iPhone Safari、悪意あるファイル試験を完了する。
+
+Chromium 141でPDF.js現行buildのMap#getOrInsertComputed非対応を確認（run 45925582157）。同じ固定版のlegacy/buildを使用して再検証する。上記runではNode 42件成功、PSD/TIFF/EPS本体/EPS内TIFF/PNG描画成功、PDF/AI失敗。

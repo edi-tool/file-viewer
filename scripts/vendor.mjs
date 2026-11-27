@@ -3,7 +3,7 @@ import {mkdir,cp,writeFile,readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {build} from 'esbuild';
 await mkdir('vendor/pdfjs',{recursive:true});
-for(const p of ['build/pdf.min.mjs','build/pdf.worker.min.mjs','cmaps','standard_fonts','iccs','wasm','LICENSE']){
+for(const p of ['legacy/build/pdf.min.mjs','legacy/build/pdf.worker.min.mjs','cmaps','standard_fonts','iccs','wasm','LICENSE']){
  await cp('node_modules/pdfjs-dist/'+p,'vendor/pdfjs/'+p.split('/').at(-1),{recursive:true});
 }
 await build({stdin:{contents:"export {readPsd,initializeCanvas} from 'ag-psd';",resolveDir:process.cwd()},bundle:true,platform:'browser',format:'esm',outfile:'vendor/psd.mjs',legalComments:'eof'});
