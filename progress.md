@@ -23,3 +23,6 @@
 - JTDはWASMビルド・合成文書本文ラウンドトリップをCIで検証する。ページレイアウトは未実装。公開・ハブ登録は未実施。
 
 - CI run 45925582157: Node 42件成功。ChromiumでPSD、TIFF、EPS本体、EPS埋込TIFF、PNGの5描画に成功。PDF/AIはMap#getOrInsertComputed非対応。PDF.jsをlegacy/buildへ変更し再検証。
+
+- PR #3は全CI成功後に main へマージ（49f11fa）。PDF・AI含む合成描画、JTD本文表示が成功。
+- 次段階: 上流JTDのMIT描画コードをWorker向けに適応し、ページ近似表示とTIFFページ切替を追加。新CI結果待ち。

@@ -15,3 +15,6 @@ TIFFは初期版では非入れ子・非タイル・非RAW・非JPEG/Deflate・�
 `npm ci --ignore-scripts && npm run vendor` の後、必要なら `bash scripts/build-jtd.sh`、次に `npm run preview`。dist-previewは開発用・noindex。GitHub Pagesへの自動デプロイは行わない。公開前に全CI、実ファイル比較、推移依存のライセンス監査、iPhone Safari、悪意あるファイル試験を完了する。
 
 Chromium 141でPDF.js現行buildのMap#getOrInsertComputed非対応を確認（run 45925582157）。同じ固定版のlegacy/buildを使用して再検証する。上記runではNode 42件成功、PSD/TIFF/EPS本体/EPS内TIFF/PNG描画成功、PDF/AI失敗。
+
+## 次段階
+JTDのページ描画はEZPZ File JTD v0.5.14の描画コードをMIT条件で再利用し、Worker上で実行する。ネットフォントなし、画像は限定されたラスター形式のみ、本文テキストも取得できる。描画不能時は本文表示にフォールバックする。TIFFは許可済みIFDのページ移動に対応。原本照合と実機試験は引き続き必要。
