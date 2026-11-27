@@ -33,4 +33,4 @@ python3 -m http.server 8000 -d dist-preview --bind 127.0.0.1
 ```
 
 関連ツール: [edi-tool](https://edi-tool.github.io/) / [立体書影さん](https://github.com/edi-tool/book_mockup)。
-ライセンスは所有者の確定後に明記。第三者ライブラリは各ライセンスに従う。
+ソースコードは [Apache License 2.0](LICENSE)、独自のマニュアル・解説記事は [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)、名称・ロゴは All Rights Reserved とします。第三者ライブラリは各ライセンスに従います。開発元は [NOTICE](NOTICE) を参照してください。

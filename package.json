@@ -1,4 +1,5 @@
 {
+  "license": "Apache-2.0",
   "name": "file-viewer",
   "private": true,
   "type": "module",
