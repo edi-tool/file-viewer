@@ -1,21 +1,22 @@
-import {dimensions} from './limits.mjs';
+import {dimensions,fit} from './limits.mjs';
 import {epsSections} from './probe.mjs';
 import {epsBoundingBox,translateEps} from './eps.mjs';
 import {guardTiff} from './tiff-guard.mjs';
 import {renderJtdPage} from './jtd-page.mjs';
 function classic(url){return import(url);}
-async function psDecode(buffer,limits){
+async function psDecode(buffer,limits,scale=1){
  const box=epsBoundingBox(buffer,limits),{width,height}=box;
  const {Pscat}=await import('../vendor/pscat/core.js');
  const ps=await Pscat.load();ps.maxSteps=2_000_000;
- const status=ps.run(translateEps(buffer,box),width,height);
+ const target=fit(width,height,scale,limits),factor=Math.min(target.width/width,target.height/height);
+ const status=ps.run(translateEps(buffer,box),width,height,factor);
  if(status!==0||ps.error)throw new Error('PostScriptの描画に失敗、または実行上限に達しました。');
  if(ps.pageCount()!==1)throw new Error('複数ページのPostScriptは未対応です。');
- const pixels=ps.pixels();if(ps.width!==width||ps.height!==height||pixels.length!==width*height*4)throw new Error('PostScriptの出力が不正です。');
- return {width,height,rgba:pixels.buffer,mode:'PostScript再描画（試験実装）',warnings:['BoundingBoxに基づく近似描画。座標系を初期化するEPS、フォント・色・効果の完全再現は保証しません。',...(ps.warnings.length?['フォントの代替が発生しました。']:[])]};
+ const pixels=ps.pixels();dimensions(ps.width,ps.height,limits);if(pixels.length!==ps.width*ps.height*4)throw new Error('PostScriptの出力が不正です。');
+ return {width:ps.width,height:ps.height,rgba:pixels.buffer,mode:'PostScript再描画（試験実装）',warnings:['BoundingBoxに基づく近似描画。座標系を初期化するEPS、フォント・色・効果の完全再現は保証しません。',...(ps.warnings.length?['フォントの代替が発生しました。']:[])]};
 }
 async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
- if(probe.route==='eps'&&probe.kind!=='eps-binary')return psDecode(buffer,limits);
+ if(probe.route==='eps'&&probe.kind!=='eps-binary')return psDecode(buffer,limits,scale);
  if(probe.route==='psd'){
   dimensions(probe.width,probe.height,limits);
   const {readPsd,initializeCanvas}=await classic('../vendor/psd.mjs');
@@ -28,7 +29,7 @@ async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
  }
  if(probe.route==='tiff'||probe.route==='eps'){
   let bytes=buffer;
-  if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff)return psDecode(buffer.slice(s.postscript.offset,s.postscript.offset+s.postscript.length),limits);bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
+  if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff)return psDecode(buffer.slice(s.postscript.offset,s.postscript.offset+s.postscript.length),limits,scale);bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
   const checked=guardTiff(bytes,limits);
   const {default:UTIF}=await classic('../vendor/tiff.mjs');
   const ifds=UTIF.decode(bytes,{parseMN:false,debug:false});if(!ifds.length)throw new Error('TIFFページがありません。');

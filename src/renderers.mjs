@@ -21,7 +21,7 @@ async function pdfOpen(file,kind,{signal,limits}){
    const p=await doc.getPage(1);const t=await p.getTextContent();const s=t.items.map(x=>x.str||'').join(' ');
    if(/saved without pdf content|without pdf content|create pdf compatible file|PDF互換ファイルを作成/i.test(s))throw new Error('PDF互換データがなく、案内ページのみのAIです。');
   }
-  return {mode:kind==='ai-pdf-candidate'?modes.ai:modes.pdf,pageCount:doc.numPages,warnings:['画面用RGB表示です。AIはPDF部分のみ。非互換案内の検出は完全ではありません。'],dispose,async renderPage(index,{scale,signal}){
+  return {scalable:true,mode:kind==='ai-pdf-candidate'?modes.ai:modes.pdf,pageCount:doc.numPages,warnings:['画面用RGB表示です。AIはPDF部分のみ。非互換案内の検出は完全ではありません。'],dispose,async renderPage(index,{scale,signal}){
    const page=await doc.getPage(index+1);signal.throwIfAborted();const vp=page.getViewport({scale:1});const {width,height}=fit(vp.width,vp.height,scale,limits);
    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const viewport=page.getViewport({scale:width/vp.width});
    let rendering,expired=false;const abort=()=>rendering?.cancel();const timer=setTimeout(()=>{expired=true;abort();},limits.timeoutMs);signal.addEventListener('abort',abort,{once:true});
@@ -46,17 +46,18 @@ async function workerOpen(file,probe,{signal,limits}){
  if(!first.rgba&&typeof first.text==='string'){let text=first.text;return {mode:modes.jtd,pageCount:1,warnings:first.warnings||['書式・図版は表示しません。'],dispose(){text='';first=null;},async renderPage(_,{signal}){signal.throwIfAborted();const element=document.createElement('pre');element.textContent=text;return {element,dispose(){element.textContent='';element.remove();}};}};}
  const mode=first.mode||modes[probe.route],pageCount=pageCheck(first.pageCount??1,limits),warnings=first.warnings||[];
  let text=first.text;delete first.text;
- return {mode,pageCount,warnings,dispose(){first=null;text=undefined;},async renderPage(index,{scale,signal}){
+ const scalable=probe.route==='jtd'||mode.startsWith('PostScript再描画');
+ return {scalable,mode,pageCount,warnings,dispose(){first=null;text=undefined;},async renderPage(index,{scale,signal}){
   signal.throwIfAborted();
   const isJtd=probe.route==='jtd';
-  const result=index===0&&first&&(!isJtd||scale===1)?first:await workerCall(file,probe,signal,limits,index,isJtd?scale:1);
+  const result=index===0&&first&&(!scalable||scale===1)?first:await workerCall(file,probe,signal,limits,index,scalable?scale:1);
   signal.throwIfAborted();
   if(!result.rgba)throw Error('ページを描画できません。');
   const {width,height}=dimensions(result.width,result.height,limits),rgba=new Uint8ClampedArray(result.rgba);
   if(rgba.length!==width*height*4)throw Error('描画結果が不正です。');
   const src=document.createElement('canvas');src.width=width;src.height=height;src.getContext('2d').putImageData(new ImageData(rgba,width,height),0,0);
   let frame;
-  try{const d=isJtd?{width,height}:fit(width,height,scale,limits);frame=canvasFrame(d.width,d.height,ctx=>ctx.drawImage(src,0,0,d.width,d.height));}finally{src.width=src.height=0;}
+  try{const d=scalable?{width,height}:fit(width,height,scale,limits);frame=canvasFrame(d.width,d.height,ctx=>ctx.drawImage(src,0,0,d.width,d.height));}finally{src.width=src.height=0;}
   if(!isJtd||typeof text!=='string')return frame;
   const element=document.createElement('div'),details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');
   summary.textContent='文書全体の本文テキスト';pre.textContent=text;details.append(summary,pre);element.append(frame.element,details);
