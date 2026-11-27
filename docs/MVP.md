@@ -28,3 +28,5 @@ EPSの非ゼロ原点は整数BoundingBoxの範囲内でtranslateを挿入して
 Orientation 1–8の反転・回転、8bit CMYKの近似RGB変換、関連アルファの補正、色モードとサンプル数の事前検査を追加。ICC管理・16bit CMYK・JPEG/Deflate/Tiled TIFFは未対応。合成CMYKとOrientationのブラウザ試験を追加。
 
 Deflate（8/32946、8bit、ストリップ形式）はブラウザのDecompressionStreamで展開先を固定し、サイズ不一致を拒否。水平Predictor 2を復元。JPEG・タイル・16bit Deflateは未対応。DOS EPSは埋込優先と本体再描画を利用者が選択可能。本体再描画は拡大率に応じて高精細化する。
+
+EPSはHiResBoundingBoxがある場合、整数BoundingBoxより優先して小数点座標を補正する。フィット表示は巨大画像で10%未満も許可。画面いっぱい表示では背後の要素をinertにし、キーボードフォーカスを復帰する。狭幅画面での表示・ドラッグをCIに追加。

@@ -12,7 +12,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{
   const colors=await page.locator('#preview canvas').evaluate(c=>{const ctx=c.getContext('2d');return {width:c.width,height:c.height,colors:[Array.from(ctx.getImageData(Math.floor(c.width/4),Math.floor(c.height/2),1,1).data),Array.from(ctx.getImageData(Math.floor(c.width*3/4),Math.floor(c.height/2),1,1).data)]};});
   assert.ok(colors.width>=64);assert.ok(colors.height>=64);assert.deepEqual(colors.colors,[[255,0,0,255],[0,0,255,255]],name);console.log(name,'PASS',status);
  }catch(e){failures.push(name+': '+e.message);console.log(name,'FAIL',await page.locator('#status').textContent(),e.message);}finally{await page.locator('#clear').click();}};
- await check('two-colors.pdf','application/pdf');await check('pdf-compatible-candidate.ai','application/octet-stream');await check('composite.psd','application/octet-stream');await check('rgb.tiff','image/tiff');await check('cmyk.tiff','image/tiff');await check('deflate.tiff','image/tiff');await check('deflate-predictor.tiff','image/tiff');await check('binary-preview.eps','application/postscript');await check('vector.eps','application/postscript');await check('shifted.eps','application/postscript');await check('positive-origin.eps','application/postscript');
+ await check('two-colors.pdf','application/pdf');await check('pdf-compatible-candidate.ai','application/octet-stream');await check('composite.psd','application/octet-stream');await check('rgb.tiff','image/tiff');await check('cmyk.tiff','image/tiff');await check('deflate.tiff','image/tiff');await check('deflate-predictor.tiff','image/tiff');await check('binary-preview.eps','application/postscript');await check('vector.eps','application/postscript');await check('shifted.eps','application/postscript');await check('hires.eps','application/postscript');await check('positive-origin.eps','application/postscript');
  await page.locator('#pick').setInputFiles({name:'oriented.tiff',mimeType:'image/tiff',buffer:f['oriented.tiff']});await page.locator('#preview canvas').waitFor();assert.deepEqual(await page.locator('#preview canvas').evaluate(c=>Array.from(c.getContext('2d').getImageData(16,32,1,1).data)),[0,0,255,255]);await page.locator('#clear').click();console.log('TIFF orientation PASS');
  await page.locator('#pick').setInputFiles({name:'two-pages.tiff',mimeType:'image/tiff',buffer:f['two-pages.tiff']});
  await page.locator('#preview canvas').waitFor({timeout:20000});
@@ -32,5 +32,12 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{
  await page.locator('#zoom').selectOption('1');assert.equal(await page.locator('#percent').textContent(),'100%');await page.locator('#plus').click();assert.equal(await page.locator('#percent').textContent(),'125%');
  await page.locator('#expand').click();assert.equal(await page.locator('#expand').getAttribute('aria-pressed'),'true');await page.keyboard.press('Escape');assert.equal(await page.locator('#expand').getAttribute('aria-pressed'),'false');
  await page.locator('#clear').click();console.log('Viewer layout and controls PASS');
- await page.setViewportSize({width:320,height:640});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(external,[]);assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);
+ await page.setViewportSize({width:320,height:640});
+ await page.locator('#pick').setInputFiles({name:'native.png',mimeType:'image/png',buffer:f['native.png']});await page.locator('#preview canvas').waitFor();
+ await page.locator('#zoom').selectOption('8');
+ const rect=await page.locator('#preview').boundingBox();await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.down();await page.mouse.move(rect.x+30,rect.y+30,{steps:6});await page.mouse.up();
+ assert.ok(await page.locator('#preview').evaluate(e=>e.scrollLeft>0||e.scrollTop>0),'pan changes scroll');
+ await page.locator('#zoom').selectOption('fit');assert.ok(await page.locator('#preview canvas').evaluate(c=>c.getBoundingClientRect().width<=document.querySelector('#preview').clientWidth));
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.locator('#clear').click();console.log('Narrow viewport zoom and drag PASS');
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(external,[]);assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);
 }finally{await browser.close();}
