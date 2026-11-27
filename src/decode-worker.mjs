@@ -1,7 +1,19 @@
 import {dimensions} from './limits.mjs';
 import {epsSections} from './probe.mjs';
+import {epsBoundingBox} from './eps.mjs';
 function classic(url){return import(url);}
+async function psDecode(buffer,limits){
+ const {width,height}=epsBoundingBox(buffer,limits);
+ const {Pscat}=await import('../vendor/pscat/core.js');
+ const ps=await Pscat.load();ps.maxSteps=2_000_000;
+ const status=ps.run(new Uint8Array(buffer),width,height);
+ if(status!==0||ps.error)throw new Error('PostScriptの描画に失敗、または実行上限に達しました。');
+ if(ps.pageCount()!==1)throw new Error('複数ページのPostScriptは未対応です。');
+ const pixels=ps.pixels();if(ps.width!==width||ps.height!==height||pixels.length!==width*height*4)throw new Error('PostScriptの出力が不正です。');
+ return {width,height,rgba:pixels.buffer,mode:'PostScript再描画（試験実装）',warnings:['原点0のEPSのみ。フォント・色・効果の完全再現は保証しません。',...(ps.warnings.length?['フォントの代替が発生しました。']:[])]};
+}
 async function decode({buffer,probe,limits}){
+ if(probe.route==='eps'&&probe.kind!=='eps-binary')return psDecode(buffer,limits);
  if(probe.route==='psd'){
   dimensions(probe.width,probe.height,limits);
   const {readPsd,initializeCanvas}=await classic('../vendor/psd.mjs');
@@ -26,7 +38,7 @@ async function decode({buffer,probe,limits}){
  }
  if(probe.route==='jtd'){
   const {default:init,JtdDocument}=await import('../vendor/jtd/ezpzjtd_wasm.js');await init();
-  const doc=new JtdDocument(new Uint8Array(buffer));try{const text=doc.text();if(text.length>2_000_000)throw new Error('本文が表示上限を超えています。');return {text};}finally{doc.free();}
+  const doc=JtdDocument.withLimits(new Uint8Array(buffer),JSON.stringify({maxBytes:limits.maxBytes,maxTextUnits:2_000_000,maxPages:limits.maxPages,maxSheets:100,maxExpand:4}));try{const text=doc.text();if(text.length>2_000_000)throw new Error('本文が表示上限を超えています。');return {text};}finally{doc.free();}
  }
  throw new Error('未対応形式です。');
 }

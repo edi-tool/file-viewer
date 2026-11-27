@@ -11,3 +11,8 @@ await build({stdin:{contents:"export {default} from 'utif';",resolveDir:process.
 for(const name of ['ag-psd','utif','base64-js','pako']){const pkg=JSON.parse(await readFile('node_modules/'+name+'/package.json','utf8'));const path='node_modules/'+name+'/LICENSE';try{await cp(path,'vendor/'+name+'-LICENSE');}catch{try{await cp(path+'.md','vendor/'+name+'-LICENSE');}catch{console.warn('Review license manually:',name);}}console.log(name,pkg.version,pkg.license);}
 const manifest={};for(const p of ['pdfjs/pdf.min.mjs','pdfjs/pdf.worker.min.mjs','psd.mjs','tiff.mjs'])manifest[p]=createHash('sha256').update(await readFile('vendor/'+p)).digest('hex');
 await writeFile('vendor/SHA256.json',JSON.stringify(manifest,null,2)+'\n');
+
+await mkdir('vendor/pscat',{recursive:true});
+for(const p of ['core.js','pscat.wasm','LICENSE-MIT','LICENSE-APACHE','LICENSE-OFL','fonts/LICENSE','THIRD_PARTY_NOTICES.md','THIRD_PARTY_LICENSES.html']){const dest='vendor/pscat/'+p;await mkdir(dest.slice(0,dest.lastIndexOf('/')),{recursive:true});await cp('node_modules/pscat/'+p,dest);}
+for(const p of ['pscat/core.js','pscat/pscat.wasm'])manifest[p]=createHash('sha256').update(await readFile('vendor/'+p)).digest('hex');
+await writeFile('vendor/SHA256.json',JSON.stringify(manifest,null,2)+'\n');

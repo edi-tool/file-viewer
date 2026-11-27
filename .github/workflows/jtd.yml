@@ -1,0 +1,28 @@
+name: JTD integration
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  jtd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts
+      - run: bash scripts/build-jtd.sh
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          node tests/jtd-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: jtd-build-audit
+          path: |
+            vendor/jtd/SHA256SUMS
+            vendor/jtd/SOURCE_COMMIT
