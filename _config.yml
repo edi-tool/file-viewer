@@ -1,0 +1,12 @@
+exclude:
+  - docs
+  - tests
+  - scripts
+  - node_modules
+  - AGENTS.md
+  - CLAUDE.md
+  - progress.md
+  - CHANGELOG.md
+  - README.md
+  - package.json
+  - package-lock.json
