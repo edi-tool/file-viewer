@@ -10,3 +10,6 @@ pscat@0.7.1 の core.js と wasm を利用。maxSteps 200万、Worker 15秒。�
 TIFFは初期版では非入れ子・非タイル・非RAW・非JPEG/Deflate・インターリーブ形式に制限し、IFD、タグ件数、オフセット、ストリップ長を事前確認。LZW/PackBitsの実画像検証は別途必要。PDFの読み込み・描画に暫定15秒タイマーを追加。JTD v0.5.14のcommit 454c445a48ec9c3b5b2db4e9e44711d10ff45fcf をビルド前に照合。30MiB等の上限は開発用暫定値。
 
 依存lockはCI run 45925425778の生成内容を取り込み済み。ブラウザ検証はUbuntu 24.04固定。初回はPDFキャンバス出現待ちタイムアウトのため、形式別独立テストと画面エラー・console診断を追加。
+
+## 再現可能なローカルプレビュー
+`npm ci --ignore-scripts && npm run vendor` の後、必要なら `bash scripts/build-jtd.sh`、次に `npm run preview`。dist-previewは開発用・noindex。GitHub Pagesへの自動デプロイは行わない。公開前に全CI、実ファイル比較、推移依存のライセンス監査、iPhone Safari、悪意あるファイル試験を完了する。

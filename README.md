@@ -2,13 +2,15 @@
 
 出版・編集実務で受け取った PSD、AI、一太郎、EPS などを専用アプリなしで確認する統合ビュワーの開発プロジェクト。
 
-**現在は開発準備段階。描画機能はまだ実装していません。**
+**開発中：描画アダプターを実装、ブラウザ統合検証中。公開版ではありません。**
 
 - 開発課題: [Issue #1](https://github.com/edi-tool/file-viewer/issues/1)
 - 元の課題: [edi-tool.github.io#12](https://github.com/edi-tool/edi-tool.github.io/issues/12)
 - [実装計画・受入条件](docs/IMPLEMENTATION.md)
 - [先行技術の調査・採用判定](docs/RESEARCH.md)
 - [進捗](progress.md)
+- [MVP実装・制約](docs/MVP.md)
+- [合成試料・安全性検証](docs/VALIDATION.md)
 
 公開予定: https://edi-tool.github.io/file-viewer/ （未公開）。
 
@@ -18,10 +20,16 @@
 
 ## 開発
 
-Node.js 22 以上。形式判定の合成テストのみ、依存なし。
+Node.js 22以上。基礎テストは外部依存なし。描画ライブラリはビルド時に同一オリジン資産として生成する。
 
 ```sh
 npm test
+npm ci --ignore-scripts
+npm run vendor
+# 一太郎の試験用WASM（Rustとネット接続が必要）
+bash scripts/build-jtd.sh
+npm run preview
+python3 -m http.server 8000 -d dist-preview --bind 127.0.0.1
 ```
 
 関連ツール: [edi-tool](https://edi-tool.github.io/) / [立体書影さん](https://github.com/edi-tool/book_mockup)。

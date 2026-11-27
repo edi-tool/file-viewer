@@ -2,3 +2,4 @@ generated-fixtures/
 node_modules/
 __pycache__/
 vendor/
+dist-preview/
