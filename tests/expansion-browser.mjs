@@ -2,7 +2,7 @@ import {chromium} from 'playwright';import assert from 'node:assert/strict';impo
 const browser=await chromium.launch({headless:true});try{
  const page=await browser.newPage();const external=[];await page.route('**/*',r=>{const u=new URL(r.request().url());if(['http:','https:'].includes(u.protocol)&&u.origin!=='http://127.0.0.1:8000'){external.push(u.href);return r.abort();}return r.continue();});await page.goto('http://127.0.0.1:8000/');
  const open=async(name,buffer)=>{await page.locator('#pick').setInputFiles({name,mimeType:'application/octet-stream',buffer});await page.waitForFunction(()=>document.querySelector('#preview canvas, #preview pre')||document.querySelector('#status').dataset.error==='true',{}, {timeout:20000});assert.equal(await page.locator('#status').getAttribute('data-error'),'false',await page.locator('#status').textContent());};
- for(const [name,bytes] of [['legacy.ai',makeNativeAi()],['private.ai',makePrivateAi()]]){
+ for(const [name,bytes] of [['legacy.ai',makeNativeAi()],['private.ai',makePrivateAi()],['modern-zstd.ai',makePrivateAi('zstd')]]){
   await open(name,bytes);assert.match(await page.locator('#status').textContent(),/原生PGF/);assert.ok(await page.locator('#preview canvas').evaluate(c=>{const p=c.getContext('2d').getImageData(Math.floor(c.width/2),Math.floor(c.height/2),1,1).data;return p[0]>p[1]+20&&p[0]>p[2]+20;}),'red native artwork');await page.locator('#clear').click();console.log(name,'PASS');
  }
  await open('template.ait',makePdf());assert.match(await page.locator('#status').textContent(),/PDF互換/);await page.locator('#clear').click();

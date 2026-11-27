@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {zstdCompressSync} from 'node:zlib';import {checkZstdFrame} from '../src/zstd-frame.mjs';
+test('bounded single frame',()=>{const b=zstdCompressSync(Buffer.from('sample text'));assert.equal(checkZstdFrame(b,1024).content,11);assert.throws(()=>checkZstdFrame(b,4));assert.throws(()=>checkZstdFrame(Buffer.concat([b,b]),1024));assert.throws(()=>checkZstdFrame(b.subarray(0,b.length-1),1024));});
+test('window budget checked before decompression',()=>{const b=Uint8Array.of(0x28,0xb5,0x2f,0xfd,0,0xf8,1,0,0);assert.throws(()=>checkZstdFrame(b,32*1024*1024));});

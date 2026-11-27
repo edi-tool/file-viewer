@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import {deflateSync} from 'node:zlib';
+import {deflateSync,zstdCompressSync} from 'node:zlib';
 const b = s => Buffer.from(s, 'ascii');
 // All fixtures are generated, no third-party artwork or real documents.
 export function makePdf() {
@@ -77,8 +77,8 @@ export function makeBmp(){
 export function makeNativeAi(){
  return b(['%!PS-Adobe-3.0','%%Creator: Adobe Illustrator 28.0','%%AI8_CreatorVersion: 28.0','%%BoundingBox: 0 0 200 100','%AIArtboard: Main|0 0 200 100','0 1 1 0 k','10 10 m','190 10 l','190 90 l','10 90 l','h','f','%%EOF',''].join('\n'));
 }
-export function makePrivateAi(){
- const source=makeNativeAi(),privateBytes=Buffer.concat([b('%AI12_CompressedData\n'),deflateSync(source)]),placeholder='BT /F1 12 Tf 10 50 Td (saved without PDF content) Tj ET\n';
+export function makePrivateAi(algorithm='deflate'){
+ const source=makeNativeAi(),privateBytes=algorithm==='zstd'?Buffer.concat([b('%AI24_ZStandard_Data\n'),zstdCompressSync(source)]):Buffer.concat([b('%AI12_CompressedData\n'),deflateSync(source)]),placeholder='BT /F1 12 Tf 10 50 Td (saved without PDF content) Tj ET\n';
  const objects=[b('<< /Type /Catalog /Pages 2 0 R /PieceInfo << /Illustrator << /Private 4 0 R >> >> >>'),b('<< /Type /Pages /Count 1 /Kids [3 0 R] >>'),b('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Resources << /Font << /F1 8 0 R >> >> /Contents 7 0 R >>'),b('<< /NumBlock 1 /AIPrivateData1 5 0 R >>'),Buffer.concat([b(`<< /Length ${privateBytes.length} >>\nstream\n`),privateBytes,b('\nendstream')]),b('<< /Creator (Adobe Illustrator 28.0) >>'),b(`<< /Length ${b(placeholder).length} >>\nstream\n${placeholder}endstream`),b('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')];
  let chunks=[b('%PDF-1.7\n')],length=chunks[0].length;const offsets=[];for(const [i,o] of objects.entries()){offsets.push(length);const x=Buffer.concat([b(`${i+1} 0 obj\n`),o,b('\nendobj\n')]);chunks.push(x);length+=x.length;}chunks.push(b(`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`+offsets.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R /Info 6 0 R >>\nstartxref\n${length}\n%%EOF\n`));return Buffer.concat(chunks);
 }
