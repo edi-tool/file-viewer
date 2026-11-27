@@ -1,0 +1,35 @@
+name: Reader usability
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reader:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: desktop-chromium
+            browser: chromium
+          - profile: desktop-firefox
+            browser: firefox
+          - profile: mobile-webkit
+            browser: webkit
+          - profile: mobile-chromium
+            browser: chromium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm run vendor
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Reader interaction
+        env:
+          READER_PROFILE: ${{ matrix.profile }}
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          node tests/reader-browser.mjs
