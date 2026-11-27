@@ -25,6 +25,12 @@ export function guardTiff(buffer,limits){
   const width=one(256),height=one(257);dimensions(width,height,limits);
   const spp=one(277,1),bits=values(258,[1]),compression=one(259,1),photo=one(262,1),planar=one(284,1),rows=one(278,height);
   if(spp<1||spp>4||bits.length!==spp||bits.some(x=>![1,2,4,8,16].includes(x)||x!==bits[0])||![1,5,32773].includes(compression)||![0,1,2,3,5].includes(photo)||planar!==1||rows<1)fail();
+  const orientation=one(274,1),extra=values(338,[]),format=values(339,[1]);
+  if(orientation<1||orientation>8||format.some(v=>v!==1))fail();
+  if(photo===2&&(![3,4].includes(spp)||![8,16].includes(bits[0])||(spp===4&&(extra.length!==1||![1,2].includes(extra[0])))))fail();
+  if(photo===5&&(spp!==4||bits[0]!==8||one(332,1)!==1||extra.length))fail();
+  if([0,1].includes(photo)&&(spp!==1||![1,4,8,16].includes(bits[0])))fail();
+  if(photo===3&&(spp!==1||![1,2,4,8].includes(bits[0])||values(320,[]).length!==3*(2**bits[0])))fail();
   if(tags.has(271))fail(); // vendor-specific RAW overrides in UTIF
   const offsets=values(273,[]),lengths=values(279,[]),strips=Math.ceil(height/rows);
   if(offsets.length!==strips||lengths.length!==strips||strips>4096)fail();

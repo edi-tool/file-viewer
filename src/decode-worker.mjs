@@ -2,6 +2,7 @@ import {dimensions,fit} from './limits.mjs';
 import {epsSections} from './probe.mjs';
 import {epsBoundingBox,translateEps} from './eps.mjs';
 import {guardTiff} from './tiff-guard.mjs';
+import {orientRgba,cmyk8,unpremultiply} from './tiff-pixels.mjs';
 import {renderJtdPage} from './jtd-page.mjs';
 function classic(url){return import(url);}
 async function psDecode(buffer,limits,scale=1){
@@ -37,9 +38,14 @@ async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
   const ifd=ifds[pageIndex];const {width,height}=dimensions(Number(ifd.t256?.[0]),Number(ifd.t257?.[0]),limits);
   const samples=Number(ifd.t277?.[0]??1),bits=ifd.t258||[1];
   if(!Number.isInteger(samples)||samples<1||samples>4||bits.some(x=>![1,2,4,8,16].includes(Number(x))))throw new Error('未対応のTIFFサンプル形式です。');
-  UTIF.decodeImage(bytes,ifd);const rgba=UTIF.toRGBA8(ifd);
+  UTIF.decodeImage(bytes,ifd);const photo=Number(ifd.t262?.[0]??1);let rgba=photo===5?cmyk8(ifd.data,width,height):UTIF.toRGBA8(ifd);
   if(rgba.byteLength!==width*height*4)throw new Error('TIFF寸法が一致しません。');
-  return {width,height,pageCount:probe.route==='eps'?1:checked.pageCount,rgba:rgba.buffer.slice(rgba.byteOffset,rgba.byteOffset+rgba.byteLength),warnings:[probe.route==='eps'?'埋め込み画像のみ。PostScript本体は未描画。':'印刷色の確認には使えません。']};
+  if(photo===2&&samples===4&&Number(ifd.t338?.[0])===1)rgba=unpremultiply(rgba);
+  const oriented=orientRgba(rgba,width,height,Number(ifd.t274?.[0]??1));dimensions(oriented.width,oriented.height,limits);
+  const warnings=[probe.route==='eps'?'埋め込み画像のみ。PostScript本体は未描画。':'印刷色の確認には使えません。'];
+  if(photo===5)warnings.push('CMYKを近似RGBに変換しています。ICCプロファイルは未適用です。');
+  else if(ifd.t34675)warnings.push('埋め込みICCプロファイルは未適用です。');
+  return {width:oriented.width,height:oriented.height,pageCount:probe.route==='eps'?1:checked.pageCount,rgba:oriented.rgba.buffer.slice(oriented.rgba.byteOffset,oriented.rgba.byteOffset+oriented.rgba.byteLength),warnings};
  }
  if(probe.route==='jtd'){
   const {default:init,JtdDocument,JtdEditor}=await import('../vendor/jtd/ezpzjtd_wasm.js');await init();
