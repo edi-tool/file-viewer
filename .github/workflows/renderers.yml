@@ -12,9 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --ignore-scripts
-      - name: Dependency lock for review
-        run: cat package-lock.json
+      - run: npm ci --ignore-scripts
       - run: npm run vendor
       - run: npm test
       - run: npx playwright install --with-deps chromium
