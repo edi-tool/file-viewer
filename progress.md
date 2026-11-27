@@ -34,3 +34,5 @@
 - 2026-11-27: ライセンス再点検。プレビュー配布物への LICENSE・NOTICE 収録とフッターからの参照を追加。第三者ライセンスの配布監査・実際のビルド確認は公開前の残作業。
 
 - PR #8はmainへマージ（b1c5e35）。配布環境で描画ライブラリ未準備エラーの報告。vendorはgitignoreであり、ブランチ直接配信では含まれない。配布物の必須資産、ハッシュ、Pagesサブパスの描画試験、明示的手動デプロイを追加。公開設定の実測・公開は未実施。
+
+- 2026-11-27: 本番確認。Pages distribution run 45942264610（publish、build/deploy成功）で https://edi-tool.github.io/file-viewer/ を配信中。vendor資産（psd/tiff/pscat/jtd/illustrator）・LICENSE・NOTICEが200、合成PDFを本番でキャンバス描画（中心画素が期待色）。Pages APIのlatest build「errored」は旧ブランチ配信の残り表示で、配信方式はworkflow。未完: 実機iPhone/Android、真正ファイル照合、第三者ライセンスの最終承認、ハブ登録。
