@@ -1,0 +1,5 @@
+import {readFile,stat} from 'node:fs/promises';import {createHash} from 'node:crypto';
+const root='dist-preview/',manifest=JSON.parse(await readFile(root+'build-info.json','utf8'));
+for(const p of ['index.html','src/ai-native.mjs','LICENSE','NOTICE','.nojekyll','vendor/illustrator/engine.mjs','vendor/illustrator/worker.mjs','vendor/illustrator/LICENSE','vendor/illustrator/fzstd-LICENSE','vendor/pdfjs/pdf.min.mjs','vendor/pdfjs/pdf.worker.min.mjs','vendor/pscat/pscat.wasm','vendor/psd.mjs','vendor/tiff.mjs',...(manifest.full?['vendor/jtd/ezpzjtd_wasm.js','vendor/jtd/ezpzjtd_wasm_bg.wasm']:[])]){const s=await stat(root+p);if(!s.isFile()||(p!=='.nojekyll'&&!s.size))throw Error('Incomplete distribution: '+p);if(p.startsWith('vendor/')&&!manifest.assets[p])throw Error('Missing hash: '+p);}
+for(const [p,hash] of Object.entries(manifest.assets)){if(!p.startsWith('vendor/')||p.split('/').includes('..'))throw Error('Invalid asset path');if(createHash('sha256').update(await readFile(root+p)).digest('hex')!==hash)throw Error('Asset hash mismatch: '+p);}
+console.log('Verified distribution:',Object.keys(manifest.assets).length,'vendor files; full:',manifest.full);

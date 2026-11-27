@@ -10,6 +10,7 @@
 - [先行技術の調査・採用判定](docs/RESEARCH.md)
 - [進捗](progress.md)
 - [対応形式の拡張](docs/FORMAT-EXPANSION.md)
+- [配布ビルド・GitHub Pages設定](docs/DEPLOYMENT.md)
 - [MVP実装・制約](docs/MVP.md)
 - [合成試料・安全性検証](docs/VALIDATION.md)
 
@@ -29,7 +30,8 @@ npm ci --ignore-scripts
 npm run vendor
 # 一太郎の試験用WASM（Rustとネット接続が必要）
 bash scripts/build-jtd.sh
-npm run preview
+node scripts/preview-build.mjs --full
+node scripts/verify-distribution.mjs
 python3 -m http.server 8000 -d dist-preview --bind 127.0.0.1
 ```
 
