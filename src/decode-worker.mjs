@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 import {dimensions,fit} from './limits.mjs';
 import {epsSections} from './probe.mjs';
 import {epsBoundingBox,translateEps} from './eps.mjs';

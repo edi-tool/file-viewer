@@ -1,4 +1,11 @@
 <!doctype html>
+<!--
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+-->
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)"><meta name="robots" content="noindex"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>統合ファイルビュワー | ファイル閲覧さん</title><link rel="stylesheet" href="styles.css"><script type="module" src="src/app.mjs"></script></head>
 <body>
 <header><a href="https://edi-tool.github.io/">edi-tool</a><span> / ファイル閲覧さん</span></header>
@@ -8,4 +15,4 @@
 <div id="preview" tabindex="0" aria-label="プレビュー（拡大時はドラッグまたはスクロールで移動）"><div id="stage"><p class="empty">ファイルを選択するか、ここにドロップしてください。</p></div></div>
 <nav class="page-nav" aria-label="ページ操作"><button id="first" disabled aria-label="最初のページ">«</button><button id="prev" disabled aria-label="前のページ">‹ <span>前へ</span></button><div class="page-jump"><form id="jump"><label class="sr-only" for="page-number">移動先ページ</label><input id="page-number" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" size="4" disabled><button id="jump-go" type="submit" disabled>移動</button></form><span id="page" aria-live="polite">—</span></div><button id="next" disabled aria-label="次のページ"><span>次へ</span> ›</button><button id="last" disabled aria-label="最後のページ">»</button><label class="sr-only" for="page-range">ページを選択</label><input id="page-range" type="range" min="1" max="1" value="1" disabled><label class="reading-direction" id="reading-options" hidden><select id="reading-direction" aria-label="スワイプで進む方向"><option value="ltr">左スワイプで次へ</option><option value="rtl">右スワイプで次へ</option></select></label></nav><div class="statusbar"><p id="status" role="status" aria-live="polite">ファイルを選択してください。</p><p id="warning"></p><p class="help">全体表示時は左右スワイプでページ送り。拡大時はドラッグ・スクロール。PCは← →、PageUp / PageDown、Home / End。</p></div></section>
 <section class="panel files-panel"><div class="files-heading"><h2>ファイル一覧 <span id="count">0</span></h2><button id="clear" disabled>すべて閉じる</button></div><ul id="files"></ul></section>
-<p class="note">開発版：PDF・AI/AIT・PSD/PSB・TIFF・EPS・一太郎・一般画像・テキスト（試験対応を含む）。表示は近似を含み、印刷色や完全な再現性を保証しません。</p></main><footer><a href="https://edi-tool.github.io/">← edi-tool ツール一覧</a> | &copy; 2026 ISHIKAWA, Natsuki | <a href="LICENSE">Apache License 2.0</a> | <a href="NOTICE">NOTICE</a></footer></body></html>
+<p class="note">開発版：PDF・AI/AIT・PSD/PSB・TIFF・EPS・一太郎・一般画像・テキスト（試験対応を含む）。表示は近似を含み、印刷色や完全な再現性を保証しません。</p></main><footer><a href="https://edi-tool.github.io/">← edi-tool ツール一覧</a> | &copy; 2026 ISHIKAWA, Natsuki | <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></footer></body></html>

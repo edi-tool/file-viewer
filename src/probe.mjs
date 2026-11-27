@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 // Preliminary format routing only. No renderer or external dependencies.
 const ascii = (s) => [...s].map(c => c.charCodeAt(0));
 const starts = (b, a, at = 0) => a.every((v, i) => b[at+i] === v);

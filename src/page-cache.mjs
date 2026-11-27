@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 // Small in-memory LRU; no persistent storage and no prefetch of user data.
 export function createPageCache(maxBytes=16*1024*1024,maxEntries=3){
  const entries=new Map();let bytes=0;

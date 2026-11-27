@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 // TIFF orientation is metadata, not a transformation of the source file.
 export function orientRgba(rgba,width,height,orientation=1){
  if(!Number.isInteger(orientation)||orientation<1||orientation>8)throw Error('TIFFのOrientationが不正です。');
