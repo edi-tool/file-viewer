@@ -1,6 +1,6 @@
 import {dimensions} from './limits.mjs';
 // Structural preflight for the first-generation TIFF renderer. Deliberately
-// reject nested/RAW/tiled/deflate/JPEG TIFF rather than expose unbounded decode.
+// reject nested/RAW/tiled/JPEG TIFF rather than expose unbounded decode.
 const sizes=[0,1,1,2,4,8,1,1,2,4,8,4,8,4];
 export function guardTiff(buffer,limits){
  const d=new DataView(buffer),n=d.byteLength;
@@ -24,7 +24,9 @@ export function guardTiff(buffer,limits){
   const one=(tag,defaultValue)=>{const v=values(tag,[defaultValue]);if(v.length!==1||v[0]===undefined)fail();return v[0];};
   const width=one(256),height=one(257);dimensions(width,height,limits);
   const spp=one(277,1),bits=values(258,[1]),compression=one(259,1),photo=one(262,1),planar=one(284,1),rows=one(278,height);
-  if(spp<1||spp>4||bits.length!==spp||bits.some(x=>![1,2,4,8,16].includes(x)||x!==bits[0])||![1,5,32773].includes(compression)||![0,1,2,3,5].includes(photo)||planar!==1||rows<1)fail();
+  if(spp<1||spp>4||bits.length!==spp||bits.some(x=>![1,2,4,8,16].includes(x)||x!==bits[0])||![1,5,8,32946,32773].includes(compression)||![0,1,2,3,5].includes(photo)||planar!==1||rows<1)fail();
+  const predictor=one(317,1);
+  if(![1,2].includes(predictor)||(predictor===2&&bits[0]!==8)||(compression===1&&predictor!==1)||([8,32946].includes(compression)&&bits[0]!==8))fail();
   const orientation=one(274,1),extra=values(338,[]),format=values(339,[1]);
   if(orientation<1||orientation>8||format.some(v=>v!==1))fail();
   if(photo===2&&(![3,4].includes(spp)||![8,16].includes(bits[0])||(spp===4&&(extra.length!==1||![1,2].includes(extra[0])))))fail();

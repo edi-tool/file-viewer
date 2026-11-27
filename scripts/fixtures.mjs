@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {deflateSync} from 'node:zlib';
 const b = s => Buffer.from(s, 'ascii');
 // All fixtures are generated, no third-party artwork or real documents.
 export function makePdf() {
@@ -35,6 +36,14 @@ export function makeColorTiff({orientation=1,cmyk=false}={}){
  for(let i=0;i<w*h;i++){const left=i%w<w/2;out.set(cmyk?(left?[0,255,255,0]:[255,255,0,0]):(left?[255,0,0]:[0,0,255]),pixels+i*spp);}
  return out;
 }
+export function makeDeflateTiff(predictor=2,overflow=false){
+ const w=64,h=64,spp=3,tags=11,bits=8+2+12*tags+4,pixels=bits+2*spp,raw=Buffer.alloc(w*h*spp+(overflow?1024:0));
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const p=(y*w+x)*spp;raw[p]=x<w/2?255:0;raw[p+2]=x<w/2?0:255;}
+ if(predictor===2)for(let y=0;y<h;y++)for(let x=w*spp-1;x>=spp;x--){const p=y*w*spp+x;raw[p]=(raw[p]-raw[p-spp])&255;}
+ const compressed=deflateSync(raw),out=Buffer.alloc(pixels+compressed.length);out.write('II');out.writeUInt16LE(42,2);out.writeUInt32LE(8,4);out.writeUInt16LE(tags,8);
+ [[256,4,1,w],[257,4,1,h],[258,3,spp,bits],[259,3,1,8],[262,3,1,2],[273,4,1,pixels],[277,3,1,spp],[278,4,1,h],[279,4,1,compressed.length],[284,3,1,1],[317,3,1,predictor]].forEach(([tag,type,count,value],i)=>{const p=10+i*12;out.writeUInt16LE(tag,p);out.writeUInt16LE(type,p+2);out.writeUInt32LE(count,p+4);out.writeUInt32LE(value,p+8);});
+ for(let i=0;i<spp;i++)out.writeUInt16LE(8,bits+2*i);compressed.copy(out,pixels);return out;
+}
 export function makeMultiTiff(){
  const first=makeTiff(),second=makeTiff(),shift=first.length-8;
  first.writeUInt32LE(first.length,130);
@@ -48,6 +57,6 @@ export function makeShiftedEps(x=-20,y=10){
 }
 export function makeEps(){return b('%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 64 64\n%%EndComments\n1 0 0 setrgbcolor 0 0 32 64 rectfill\n0 0 1 setrgbcolor 32 0 32 64 rectfill\nshowpage\n%%EOF\n');}
 export function makeBinaryEps(){const ps=makeEps(),tiff=makeTiff(),head=Buffer.alloc(30);head.set([197,208,211,198]);head.writeUInt32LE(30,4);head.writeUInt32LE(ps.length,8);head.writeUInt32LE(30+ps.length,20);head.writeUInt32LE(tiff.length,24);head.writeUInt16LE(65535,28);return Buffer.concat([head,ps,tiff]);}
-export function fixtures(){const bad=makeBinaryEps();bad.writeUInt32LE(0xffffffff,24);return {'two-colors.pdf':makePdf(),'pdf-compatible-candidate.ai':makePdf(),'composite.psd':makePsd(),'rgb.tiff':makeTiff(),'cmyk.tiff':makeColorTiff({cmyk:true}),'oriented.tiff':makeColorTiff({orientation:2}),'two-pages.tiff':makeMultiTiff(),'shifted.eps':makeShiftedEps(),'positive-origin.eps':makeShiftedEps(100,200),'vector.eps':makeEps(),'binary-preview.eps':makeBinaryEps(),'invalid-preview.eps':bad,'wrong-extension.psd':makePdf(),'truncated.psd':b('8BPS')};}
+export function fixtures(){const bad=makeBinaryEps();bad.writeUInt32LE(0xffffffff,24);return {'two-colors.pdf':makePdf(),'pdf-compatible-candidate.ai':makePdf(),'composite.psd':makePsd(),'rgb.tiff':makeTiff(),'deflate.tiff':makeDeflateTiff(1),'deflate-predictor.tiff':makeDeflateTiff(2),'deflate-overflow.tiff':makeDeflateTiff(2,true),'cmyk.tiff':makeColorTiff({cmyk:true}),'oriented.tiff':makeColorTiff({orientation:2}),'two-pages.tiff':makeMultiTiff(),'shifted.eps':makeShiftedEps(),'positive-origin.eps':makeShiftedEps(100,200),'vector.eps':makeEps(),'binary-preview.eps':makeBinaryEps(),'invalid-preview.eps':bad,'wrong-extension.psd':makePdf(),'truncated.psd':b('8BPS')};}
 export function writeFixtures(dir){mkdirSync(dir,{recursive:true});for(const [name,data] of Object.entries(fixtures()))writeFileSync(resolve(dir,name),data);}
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)writeFixtures(resolve(process.argv[2]||'generated-fixtures'));

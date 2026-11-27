@@ -5,6 +5,6 @@ test('TIFF circular IFD rejected',()=>{const b=makeTiff();b.writeUInt32LE(8,130)
 test('TIFF oversized count rejected',()=>{const b=makeTiff();b.writeUInt32LE(0xffffffff,14);assert.throws(()=>guardTiff(ab(b)));});
 test('TIFF strip outside file rejected',()=>{const b=makeTiff();b.writeUInt32LE(0xffffffff,10+5*12+8);assert.throws(()=>guardTiff(ab(b)));});
 test('TIFF forbidden nested tag rejected',()=>{const b=makeTiff();b.writeUInt16LE(330,10+9*12);assert.throws(()=>guardTiff(ab(b)));});
-test('TIFF unbounded inflate rejected',()=>{const b=makeTiff();b.writeUInt32LE(8,10+3*12+8);assert.throws(()=>guardTiff(ab(b)));});
+test('TIFF JPEG compression remains rejected',()=>{const b=makeTiff();b.writeUInt32LE(7,10+3*12+8);assert.throws(()=>guardTiff(ab(b)));});
 
 test('valid two-page TIFF',()=>assert.deepEqual(guardTiff(ab(makeMultiTiff())),{width:64,height:64,compression:1,pageCount:2}));

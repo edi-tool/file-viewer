@@ -3,6 +3,7 @@ import {epsSections} from './probe.mjs';
 import {epsBoundingBox,translateEps} from './eps.mjs';
 import {guardTiff} from './tiff-guard.mjs';
 import {orientRgba,cmyk8,unpremultiply} from './tiff-pixels.mjs';
+import {decodeDeflateTiff} from './tiff-deflate.mjs';
 import {renderJtdPage} from './jtd-page.mjs';
 function classic(url){return import(url);}
 async function psDecode(buffer,limits,scale=1){
@@ -30,7 +31,7 @@ async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
  }
  if(probe.route==='tiff'||probe.route==='eps'){
   let bytes=buffer;
-  if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff)return psDecode(buffer.slice(s.postscript.offset,s.postscript.offset+s.postscript.length),limits,scale);bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
+  if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff||probe.epsSource==='vector')return psDecode(buffer.slice(s.postscript.offset,s.postscript.offset+s.postscript.length),limits,scale);bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
   const checked=guardTiff(bytes,limits);
   const {default:UTIF}=await classic('../vendor/tiff.mjs');
   const ifds=UTIF.decode(bytes,{parseMN:false,debug:false});if(!ifds.length)throw new Error('TIFFページがありません。');
@@ -38,7 +39,7 @@ async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
   const ifd=ifds[pageIndex];const {width,height}=dimensions(Number(ifd.t256?.[0]),Number(ifd.t257?.[0]),limits);
   const samples=Number(ifd.t277?.[0]??1),bits=ifd.t258||[1];
   if(!Number.isInteger(samples)||samples<1||samples>4||bits.some(x=>![1,2,4,8,16].includes(Number(x))))throw new Error('未対応のTIFFサンプル形式です。');
-  UTIF.decodeImage(bytes,ifd);const photo=Number(ifd.t262?.[0]??1);let rgba=photo===5?cmyk8(ifd.data,width,height):UTIF.toRGBA8(ifd);
+  if([8,32946].includes(Number(ifd.t259?.[0])))await decodeDeflateTiff(bytes,ifd,width,height);else UTIF.decodeImage(bytes,ifd);const photo=Number(ifd.t262?.[0]??1);let rgba=photo===5?cmyk8(ifd.data,width,height):UTIF.toRGBA8(ifd);
   if(rgba.byteLength!==width*height*4)throw new Error('TIFF寸法が一致しません。');
   if(photo===2&&samples===4&&Number(ifd.t338?.[0])===1)rgba=unpremultiply(rgba);
   const oriented=orientRgba(rgba,width,height,Number(ifd.t274?.[0]??1));dimensions(oriented.width,oriented.height,limits);
