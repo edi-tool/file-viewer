@@ -27,8 +27,6 @@ Node.js 22以上。基礎テストは外部依存なし。描画ライブラリ�
 npm test
 npm ci --ignore-scripts
 npm run vendor
-# 原生Illustrator試験（追加依存の固定監査前）
-npm run vendor:ai
 # 一太郎の試験用WASM（Rustとネット接続が必要）
 bash scripts/build-jtd.sh
 npm run preview

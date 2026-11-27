@@ -7,3 +7,4 @@
 - 共通セッション管理と競合・解放テスト、暫定CI。
 - 開発用共通UI、PDF/画像/PSD/TIFF/EPS/JTD本文アダプター、依存固定、ブラウザ統合CI、ローカル配布プレビュー。
 - JTDレイアウトの近似描画、TIFFページ切替（開発試験）。
+- Illustrator原生PGF試験、AIT、BMP、テキスト・CSV/TSV/MD/LOGの安全なプレーンテキスト表示、PSBとJTD複数ページ試験。

@@ -16,3 +16,5 @@ await mkdir('vendor/pscat',{recursive:true});
 for(const p of ['core.js','pscat.wasm','LICENSE-MIT','LICENSE-APACHE','LICENSE-OFL','fonts/LICENSE','THIRD_PARTY_NOTICES.md','THIRD_PARTY_LICENSES.html']){const dest='vendor/pscat/'+p;await mkdir(dest.slice(0,dest.lastIndexOf('/')),{recursive:true});await cp('node_modules/pscat/'+p,dest);}
 for(const p of ['pscat/core.js','pscat/pscat.wasm'])manifest[p]=createHash('sha256').update(await readFile('vendor/'+p)).digest('hex');
 await writeFile('vendor/SHA256.json',JSON.stringify(manifest,null,2)+'\n');
+
+await import('./vendor-ai.mjs');

@@ -1,6 +1,6 @@
 # 対応形式の拡張
 ## 今回の試験実装
-- Illustrator PGF: MITの [illustrator-pgf 0.1.0](https://github.com/flyfish-dev/illustrator-pgf) を独立Workerで使用。PDF互換優先、案内ページ検出時のみ自動PGFへ、明示的な原生選択も可。旧PS形式AI/AITはPGFへ。公開版の採用前にnpm lock・全通知、真正ファイルと診断を確認。zstdは今回未接続。上流開発版は複雑な文字・効果・外部画像等を完全再現しない。
+- Illustrator PGF: MITの [illustrator-pgf 0.1.0](https://github.com/flyfish-dev/illustrator-pgf) を独立Workerで使用。PDF互換優先、案内ページ検出時のみ自動PGFへ、明示的な原生選択も可。旧PS形式AI/AITはPGFへ。npm lockはCI 45928516134で取得したintegrityを根拠に固定。公開版の採用前に全通知、真正ファイルと診断を確認。zstdは今回未接続。上流開発版は複雑な文字・効果・外部画像等を完全再現しない。
 - BMP: 非圧縮24/32bitの寸法・領域検査後、ブラウザ画像APIで表示。
 - TXT/CSV/TSV/MD/LOG: 2MiB上限、UTF-8優先/Shift_JIS、textContent。MarkdownやCSVの実行・HTML表示はしない。
 - AIT: AIと同じルート。PSBは既存の判定・描画接続があるが真正ファイル試験は未完。
@@ -14,3 +14,5 @@
 
 ## 主要形式の追加検証
 JTDは上流Editorで2ページの日本語文書を合成し、前後操作・本文・各ページの描画を検査。PSBはPhotoshop Large Documentの64bitレイヤーマスク区間を持つ合成RGBデータで合成画像の描画を検査。実際に大容量のPSBを開けるという意味ではない（現行容量/画素制限は維持）。
+
+CI 45928516134: legacy.ai（合成PS）、private.ai（合成PDFコンテナ/Deflate独自データ、案内PDFを検出）、AIT・BMP・テキストのブラウザ試験成功。npm lockを本体に統合し、通常vendorビルドに追加。最終コミットの再試験は別途確認する。

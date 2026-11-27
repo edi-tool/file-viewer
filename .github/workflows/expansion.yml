@@ -14,7 +14,6 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - run: npm run vendor
-      - run: npm run vendor:ai
       - run: npx playwright install chromium
       - run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
@@ -24,5 +23,5 @@ jobs:
         with:
           name: experimental-ai-audit
           path: |
-            experimental/illustrator/package-lock.json
+            package-lock.json
             vendor/illustrator/SHA256.json
