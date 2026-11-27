@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 // Decode only the already validated 8-bit chunky strips. Fixed-size output
 // prevents a small compressed strip from expanding without a bound.
 export async function inflateExact(bytes,expected){

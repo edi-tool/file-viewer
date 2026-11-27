@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 import {probeFile} from './probe.mjs';
 import {createSessionManager} from './session.mjs';
 import {adapterFor} from './renderers.mjs';

@@ -1,3 +1,10 @@
+/*
+SPDX-License-Identifier: Apache-2.0
+Copyright 2026 ISHIKAWA, Natsuki
+Project: edi-tool
+Source: https://github.com/edi-tool
+Applies to original code; third-party materials and separately licensed content retain their terms.
+*/
 import {dimensions} from './limits.mjs';
 // Structural preflight for the first-generation TIFF renderer. Deliberately
 // reject nested/RAW/tiled/JPEG TIFF rather than expose unbounded decode.
