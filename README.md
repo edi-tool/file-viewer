@@ -2,7 +2,7 @@
 
 出版・編集実務で受け取った PSD、AI、一太郎、EPS などを専用アプリなしで確認する統合ビュワーの開発プロジェクト。
 
-**開発中：描画アダプターを実装、ブラウザ統合検証中。公開版ではありません。**
+**開発中：基本描画アダプターのブラウザ統合試験に成功。公開版ではありません。**
 
 - 開発課題: [Issue #1](https://github.com/edi-tool/file-viewer/issues/1)
 - 元の課題: [edi-tool.github.io#12](https://github.com/edi-tool/edi-tool.github.io/issues/12)

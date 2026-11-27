@@ -2,6 +2,7 @@ import {dimensions} from './limits.mjs';
 import {epsSections} from './probe.mjs';
 import {epsBoundingBox} from './eps.mjs';
 import {guardTiff} from './tiff-guard.mjs';
+import {renderJtdPage} from './jtd-page.mjs';
 function classic(url){return import(url);}
 async function psDecode(buffer,limits){
  const {width,height}=epsBoundingBox(buffer,limits);
@@ -13,7 +14,7 @@ async function psDecode(buffer,limits){
  const pixels=ps.pixels();if(ps.width!==width||ps.height!==height||pixels.length!==width*height*4)throw new Error('PostScriptの出力が不正です。');
  return {width,height,rgba:pixels.buffer,mode:'PostScript再描画（試験実装）',warnings:['原点0のEPSのみ。フォント・色・効果の完全再現は保証しません。',...(ps.warnings.length?['フォントの代替が発生しました。']:[])]};
 }
-async function decode({buffer,probe,limits}){
+async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
  if(probe.route==='eps'&&probe.kind!=='eps-binary')return psDecode(buffer,limits);
  if(probe.route==='psd'){
   dimensions(probe.width,probe.height,limits);
@@ -28,19 +29,30 @@ async function decode({buffer,probe,limits}){
  if(probe.route==='tiff'||probe.route==='eps'){
   let bytes=buffer;
   if(probe.route==='eps'){if(probe.kind!=='eps-binary')throw new Error('PostScript本体の描画は未実装です。TIFFプレビュー付きEPSのみ対応。');const s=epsSections(new Uint8Array(buffer));if(!s.tiff)return psDecode(buffer.slice(s.postscript.offset,s.postscript.offset+s.postscript.length),limits);bytes=buffer.slice(s.tiff.offset,s.tiff.offset+s.tiff.length);}
-  guardTiff(bytes,limits);
+  const checked=guardTiff(bytes,limits);
   const {default:UTIF}=await classic('../vendor/tiff.mjs');
   const ifds=UTIF.decode(bytes,{parseMN:false,debug:false});if(!ifds.length)throw new Error('TIFFページがありません。');
-  const ifd=ifds[0];const {width,height}=dimensions(Number(ifd.t256?.[0]),Number(ifd.t257?.[0]),limits);
+  if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=checked.pageCount||!ifds[pageIndex])throw Error('TIFFページがありません。');
+  const ifd=ifds[pageIndex];const {width,height}=dimensions(Number(ifd.t256?.[0]),Number(ifd.t257?.[0]),limits);
   const samples=Number(ifd.t277?.[0]??1),bits=ifd.t258||[1];
   if(!Number.isInteger(samples)||samples<1||samples>4||bits.some(x=>![1,2,4,8,16].includes(Number(x))))throw new Error('未対応のTIFFサンプル形式です。');
   UTIF.decodeImage(bytes,ifd);const rgba=UTIF.toRGBA8(ifd);
   if(rgba.byteLength!==width*height*4)throw new Error('TIFF寸法が一致しません。');
-  return {width,height,rgba:rgba.buffer.slice(rgba.byteOffset,rgba.byteOffset+rgba.byteLength),warnings:[probe.route==='eps'?'埋め込み画像のみ。PostScript本体は未描画。':'先頭ページのみ表示。印刷色の確認には使えません。']};
+  return {width,height,pageCount:probe.route==='eps'?1:checked.pageCount,rgba:rgba.buffer.slice(rgba.byteOffset,rgba.byteOffset+rgba.byteLength),warnings:[probe.route==='eps'?'埋め込み画像のみ。PostScript本体は未描画。':'印刷色の確認には使えません。']};
  }
  if(probe.route==='jtd'){
-  const {default:init,JtdDocument}=await import('../vendor/jtd/ezpzjtd_wasm.js');await init();
-  const doc=JtdDocument.withLimits(new Uint8Array(buffer),JSON.stringify({maxBytes:limits.maxBytes,maxTextUnits:2_000_000,maxPages:limits.maxPages,maxSheets:64,maxExpand:4,maxStyleEntries:500_000}));try{const text=doc.text();if(text.length>2_000_000)throw new Error('本文が表示上限を超えています。');return {text};}finally{doc.free();}
+  const {default:init,JtdDocument,JtdEditor}=await import('../vendor/jtd/ezpzjtd_wasm.js');await init();
+  const options=JSON.stringify({maxBytes:limits.maxBytes,maxTextUnits:2_000_000,maxPages:limits.maxPages,maxSheets:64,maxExpand:4,maxStyleEntries:500_000});
+  const bytes=new Uint8Array(buffer);let text;
+  if(pageIndex===0){const doc=JtdDocument.withLimits(bytes,options);try{text=doc.text();if(text.length>2_000_000)throw Error('本文が表示上限を超えています。');}finally{doc.free();}}
+  let editor;
+  try{
+   editor=JtdEditor.openWith(bytes,options);
+   const pageCount=editor.pageCount();
+   if(!Number.isInteger(pageCount)||pageCount<1||pageCount>limits.maxPages||pageIndex>=pageCount)throw Error('一太郎のページ数が不正です。');
+   const result=await renderJtdPage(editor,pageIndex,limits,scale);
+   return {...result,pageCount,text,mode:'一太郎のページ描画（近似）'};
+  }catch(e){if(pageIndex===0&&typeof text==='string')return {text,pageCount:1,warnings:['レイアウトを描画できないため、本文のみ表示します。']};throw e;}finally{editor?.free();}
  }
  throw new Error('未対応形式です。');
 }

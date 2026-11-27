@@ -29,7 +29,7 @@ async function pdfOpen(file,kind,{signal,limits}){
   }};
  }catch(e){dispose();if(encrypted)throw new Error('パスワード付きPDFは未対応です。');if(expired)throw new Error('PDFの読み込み時間の上限を超えました。');throw e;}finally{clearTimeout(timer);signal.removeEventListener('abort',cancel);}
 }
-function workerCall(file,probe,signal,limits){
+function workerCall(file,probe,signal,limits,pageIndex=0,scale=1){
  return new Promise((resolve,reject)=>{
   if(signal.aborted){reject(abortError());return;}
   const worker=new Worker(new URL('./decode-worker.mjs',import.meta.url),{type:'module'});let done=false;
@@ -38,14 +38,29 @@ function workerCall(file,probe,signal,limits){
   signal.addEventListener('abort',cancel,{once:true});
   worker.onerror=()=>end(new Error('描画Workerを起動できません。'));
   worker.onmessage=({data})=>data.error?end(new Error(data.error)):end(null,data);
-  file.arrayBuffer().then(buffer=>{if(!done)worker.postMessage({buffer,probe,limits},[buffer]);},e=>end(e));
+  file.arrayBuffer().then(buffer=>{if(!done)worker.postMessage({buffer,probe,limits,pageIndex,scale},[buffer]);},e=>end(e));
  });
 }
 async function workerOpen(file,probe,{signal,limits}){
- const result=await workerCall(file,probe,signal,limits);signal.throwIfAborted();
- if(typeof result.text==='string'){let text=result.text;return {mode:modes.jtd,pageCount:1,warnings:['書式・図版は表示しません。'],dispose(){text='';},async renderPage(_,{signal}){signal.throwIfAborted();const element=document.createElement('pre');element.textContent=text;return {element,dispose(){element.textContent='';element.remove();}};}};}
- const {width,height}=dimensions(result.width,result.height,limits);let rgba=new Uint8ClampedArray(result.rgba);if(rgba.length!==width*height*4)throw new Error('描画結果が不正です。');
- const src=document.createElement('canvas');src.width=width;src.height=height;src.getContext('2d').putImageData(new ImageData(rgba,width,height),0,0);rgba=null;
- return {mode:result.mode||modes[probe.route],pageCount:1,warnings:result.warnings||[],dispose(){src.width=src.height=0;},async renderPage(_,{scale,signal}){signal.throwIfAborted();const d=fit(width,height,scale,limits);return canvasFrame(d.width,d.height,ctx=>ctx.drawImage(src,0,0,d.width,d.height));}};
+ let first=await workerCall(file,probe,signal,limits);signal.throwIfAborted();
+ if(!first.rgba&&typeof first.text==='string'){let text=first.text;return {mode:modes.jtd,pageCount:1,warnings:first.warnings||['書式・図版は表示しません。'],dispose(){text='';first=null;},async renderPage(_,{signal}){signal.throwIfAborted();const element=document.createElement('pre');element.textContent=text;return {element,dispose(){element.textContent='';element.remove();}};}};}
+ const mode=first.mode||modes[probe.route],pageCount=pageCheck(first.pageCount??1,limits),warnings=first.warnings||[];
+ let text=first.text;delete first.text;
+ return {mode,pageCount,warnings,dispose(){first=null;text=undefined;},async renderPage(index,{scale,signal}){
+  signal.throwIfAborted();
+  const isJtd=probe.route==='jtd';
+  const result=index===0&&first&&(!isJtd||scale===1)?first:await workerCall(file,probe,signal,limits,index,isJtd?scale:1);
+  signal.throwIfAborted();
+  if(!result.rgba)throw Error('ページを描画できません。');
+  const {width,height}=dimensions(result.width,result.height,limits),rgba=new Uint8ClampedArray(result.rgba);
+  if(rgba.length!==width*height*4)throw Error('描画結果が不正です。');
+  const src=document.createElement('canvas');src.width=width;src.height=height;src.getContext('2d').putImageData(new ImageData(rgba,width,height),0,0);
+  let frame;
+  try{const d=isJtd?{width,height}:fit(width,height,scale,limits);frame=canvasFrame(d.width,d.height,ctx=>ctx.drawImage(src,0,0,d.width,d.height));}finally{src.width=src.height=0;}
+  if(!isJtd||typeof text!=='string')return frame;
+  const element=document.createElement('div'),details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');
+  summary.textContent='文書全体の本文テキスト';pre.textContent=text;details.append(summary,pre);element.append(frame.element,details);
+  return {element,dispose(){frame.dispose();pre.textContent='';element.remove();}};
+ }};
 }
 export function adapterFor(probe){return {open(file,opts){const o={...opts,limits:opts.limits||LIMITS};if(probe.route==='image')return imageOpen(file,probe.kind,o);if(probe.route==='pdf')return pdfOpen(file,probe.kind,o);if(['psd','tiff','eps','jtd'].includes(probe.route))return workerOpen(file,probe,o);throw new Error('この形式は未対応、または破損しています。');}};}
