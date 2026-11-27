@@ -3,6 +3,7 @@ export function imageDimensions(b,kind,limits){
  const d=new DataView(b.buffer,b.byteOffset,b.byteLength),n=b.length;
  let w,h;
  if(kind==='png'&&n>=24){w=d.getUint32(16);h=d.getUint32(20);}
+ else if(kind==='bmp'&&n>=54){const header=d.getUint32(14,true),offset=d.getUint32(10,true),height=d.getInt32(22,true),bits=d.getUint16(28,true);w=d.getInt32(18,true);h=Math.abs(height);if(header<40||header>n-14||offset<14+header||d.getUint16(26,true)!==1||![24,32].includes(bits)||d.getUint32(30,true)!==0||w<1||h<1||offset+Math.ceil(w*bits/32)*4*h>n)throw Error('未対応または不正なBMPです。');}
  else if(kind==='gif'&&n>=10){w=d.getUint16(6,true);h=d.getUint16(8,true);}
  else if(kind==='webp'&&n>=30){
   const type=String.fromCharCode(...b.subarray(12,16));

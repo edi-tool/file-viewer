@@ -7,6 +7,7 @@ const jtdExt = new Set(['jtd','jtt','jtdc','jttc']);
 export function probe(input, name = '') {
   const b = input instanceof Uint8Array ? input : new Uint8Array(input);
   const ext = name.toLowerCase().split('.').pop();
+  const isAi=ext==='ai'||ext==='ait';
   const out = (kind, route, extra = {}) => ({kind, route, extension: ext, ...extra});
   if (starts(b, ascii('8BPS'))) {
     if (b.length < 26) return out('invalid','none',{reason:'truncated-psd'});
@@ -18,17 +19,19 @@ export function probe(input, name = '') {
   }
   if (starts(b,dos)) return out('eps-binary','eps');
   // PDF may have a leading prefix; only look for the header in the first 1024 bytes.
-  if (starts(b,ps)) return out(ext==='ai'?'ai-postscript':'postscript','eps');
-  for(let i=0;i<Math.min(1024,b.length-4);i++) if(starts(b,pdf,i)) return out(ext==='ai'?'ai-pdf-candidate':'pdf','pdf',{headerOffset:i,warning:ext==='ai'?'verify-not-placeholder':undefined});
+  if (starts(b,ps)) return out(isAi?'ai-postscript':'postscript','eps');
+  for(let i=0;i<Math.min(1024,b.length-4);i++) if(starts(b,pdf,i)) return out(isAi?'ai-pdf-candidate':'pdf','pdf',{headerOffset:i,warning:isAi?'verify-not-placeholder':undefined});
   if(starts(b,[0x49,0x49,42,0])||starts(b,[0x4d,0x4d,0,42])) return out('tiff','tiff');
   if(starts(b,[0x49,0x49,43,0])||starts(b,[0x4d,0x4d,0,43])) return out('bigtiff','none',{reason:'not-yet-supported'});
   if(starts(b,[137,80,78,71,13,10,26,10])) return out('png','image');
   if(starts(b,[255,216,255])) return out('jpeg','image');
   if(starts(b,ascii('GIF87a'))||starts(b,ascii('GIF89a'))) return out('gif','image');
   if(starts(b,ascii('RIFF'))&&starts(b,ascii('WEBP'),8)) return out('webp','image');
+  if(starts(b,ascii('BM'))) return out('bmp','image');
   if(jtdExt.has(ext)) return out('jtd-candidate','jtd',{container:starts(b,cfb)?'cfb':'unknown',warning:'engine-must-validate'});
   if(starts(b,cfb)) return out('cfb','none',{reason:'ambiguous-container'});
-  if(ext==='ai') return out('ai-unknown','none',{reason:'no-recognized-preview'});
+  if(isAi) return out('ai-unknown','none',{reason:'no-recognized-preview'});
+  if(['txt','csv','tsv','md','log'].includes(ext))return out('text-candidate','text');
   return out('unknown','none',{reason:'unsupported-or-invalid'});
 }
 export function epsSections(input, fileSize = input.byteLength) {

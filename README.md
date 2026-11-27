@@ -9,6 +9,7 @@
 - [実装計画・受入条件](docs/IMPLEMENTATION.md)
 - [先行技術の調査・採用判定](docs/RESEARCH.md)
 - [進捗](progress.md)
+- [対応形式の拡張](docs/FORMAT-EXPANSION.md)
 - [MVP実装・制約](docs/MVP.md)
 - [合成試料・安全性検証](docs/VALIDATION.md)
 
