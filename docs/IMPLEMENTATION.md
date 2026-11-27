@@ -32,3 +32,6 @@ UI: ファイル選択/ドロップ、複数ファイル一覧、1件ずつ描�
 - Windows Chrome/Edge、Firefox、iPhone Safari実機。ネットワーク検査とメモリ解放。
 - 依存固定、ライセンス・ハッシュ・出典、README/CHANGELOG/AGENTS/progress、共通CI/静的チェック、SEO/OGP。
 - 公開受入後にハブindex/sitemap/README/404/OGPと組織profile READMEを更新。Issue #1と元Issueは完了まで閉じない。
+
+## セッション実装の補足
+`src/session.mjs` の `createSessionManager()` を利用する。アダプターの `dispose()` は同期・例外を出さず、Worker停止等を行うこと。`renderPage()` は `dispose()` 付きフレームを返し、採用されたフレームの解放はUIが責任を持つ。古いフレームは管理側が解放する。AbortSignal自体は同期WASMを停止できないため、親側のタイマー・Worker terminateを各エンジン側に実装する。上限チェックと通信検証は別途必須。試料生成・参照描画・安全性は [VALIDATION.md](VALIDATION.md)。

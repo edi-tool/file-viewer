@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createSessionManager} from '../src/session.mjs';
+const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
+const doc=(dispose=()=>{},renderPage=async()=>({dispose(){}}))=>({pageCount:2,dispose,renderPage});
+test('open, render and close',async()=>{let freed=0;const m=createSessionManager();const d=doc(()=>freed++);await m.open({open:async()=>d},{});assert.ok(await m.renderPage(0));m.close();m.close();assert.equal(freed,1);await assert.rejects(m.renderPage(0),/No active/);});
+test('stale open is aborted and released',async()=>{const m=createSessionManager(),a=deferred();let freed=0,signal;const p=m.open({open:(_,{signal:s})=>{signal=s;return a.promise;}},{});await m.open({open:async()=>doc()},{});assert.equal(signal.aborted,true);a.resolve(doc(()=>freed++));await assert.rejects(p,{name:'AbortError'});assert.equal(freed,1);m.close();});
+test('replacement releases old frame and aborts render',async()=>{const m=createSessionManager(),a=deferred();let signal,freed=0;await m.open({open:async()=>doc(()=>{},(_,opts)=>{signal=opts.signal;return a.promise;})},{});const p=m.renderPage(0);await m.open({open:async()=>doc()},{});assert.equal(signal.aborted,true);a.resolve({dispose(){freed++;}});await assert.rejects(p,{name:'AbortError'});assert.equal(freed,1);m.close();});
+test('new render supersedes prior render',async()=>{const m=createSessionManager(),a=deferred();let freed=0;await m.open({open:async()=>doc(()=>{},i=>i===0?a.promise:Promise.resolve({page:1}))},{});const p=m.renderPage(0);assert.deepEqual(await m.renderPage(1),{page:1});a.resolve({dispose(){freed++;}});await assert.rejects(p,{name:'AbortError'});assert.equal(freed,1);m.close();});
+test('invalid page and scale rejected',async()=>{const m=createSessionManager();await m.open({open:async()=>doc()},{});await assert.rejects(m.renderPage(2),RangeError);await assert.rejects(m.renderPage(0,Infinity),RangeError);m.close();});
+test('adapter error propagated',async()=>{const m=createSessionManager();await assert.rejects(m.open({open:async()=>{throw Error('decoder failed');}},{}),/decoder failed/);await assert.rejects(m.renderPage(0),/No active/);});
