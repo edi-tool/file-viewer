@@ -1,18 +1,18 @@
 import {dimensions} from './limits.mjs';
 import {epsSections} from './probe.mjs';
-import {epsBoundingBox} from './eps.mjs';
+import {epsBoundingBox,translateEps} from './eps.mjs';
 import {guardTiff} from './tiff-guard.mjs';
 import {renderJtdPage} from './jtd-page.mjs';
 function classic(url){return import(url);}
 async function psDecode(buffer,limits){
- const {width,height}=epsBoundingBox(buffer,limits);
+ const box=epsBoundingBox(buffer,limits),{width,height}=box;
  const {Pscat}=await import('../vendor/pscat/core.js');
  const ps=await Pscat.load();ps.maxSteps=2_000_000;
- const status=ps.run(new Uint8Array(buffer),width,height);
+ const status=ps.run(translateEps(buffer,box),width,height);
  if(status!==0||ps.error)throw new Error('PostScriptの描画に失敗、または実行上限に達しました。');
  if(ps.pageCount()!==1)throw new Error('複数ページのPostScriptは未対応です。');
  const pixels=ps.pixels();if(ps.width!==width||ps.height!==height||pixels.length!==width*height*4)throw new Error('PostScriptの出力が不正です。');
- return {width,height,rgba:pixels.buffer,mode:'PostScript再描画（試験実装）',warnings:['原点0のEPSのみ。フォント・色・効果の完全再現は保証しません。',...(ps.warnings.length?['フォントの代替が発生しました。']:[])]};
+ return {width,height,rgba:pixels.buffer,mode:'PostScript再描画（試験実装）',warnings:['BoundingBoxに基づく近似描画。座標系を初期化するEPS、フォント・色・効果の完全再現は保証しません。',...(ps.warnings.length?['フォントの代替が発生しました。']:[])]};
 }
 async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
  if(probe.route==='eps'&&probe.kind!=='eps-binary')return psDecode(buffer,limits);
@@ -43,15 +43,15 @@ async function decode({buffer,probe,limits,pageIndex=0,scale=1}){
  if(probe.route==='jtd'){
   const {default:init,JtdDocument,JtdEditor}=await import('../vendor/jtd/ezpzjtd_wasm.js');await init();
   const options=JSON.stringify({maxBytes:limits.maxBytes,maxTextUnits:2_000_000,maxPages:limits.maxPages,maxSheets:64,maxExpand:4,maxStyleEntries:500_000});
-  const bytes=new Uint8Array(buffer);let text;
-  if(pageIndex===0){const doc=JtdDocument.withLimits(bytes,options);try{text=doc.text();if(text.length>2_000_000)throw Error('本文が表示上限を超えています。');}finally{doc.free();}}
+  const bytes=new Uint8Array(buffer);let text,sheets=1;
+  if(pageIndex===0){const doc=JtdDocument.withLimits(bytes,options);try{sheets=doc.sheetCount();text=doc.text();if(text.length>2_000_000)throw Error('本文が表示上限を超えています。');}finally{doc.free();}}
   let editor;
   try{
    editor=JtdEditor.openWith(bytes,options);
    const pageCount=editor.pageCount();
    if(!Number.isInteger(pageCount)||pageCount<1||pageCount>limits.maxPages||pageIndex>=pageCount)throw Error('一太郎のページ数が不正です。');
    const result=await renderJtdPage(editor,pageIndex,limits,scale);
-   return {...result,pageCount,text,mode:'一太郎のページ描画（近似）'};
+   const status=JSON.parse(editor.statusJson());if(status.truncated)result.warnings.push('ページ数の上限に達したため、後続ページは表示されません。');if(sheets>1)result.warnings.push('ページ描画は先頭シートのみ。本文テキストには他のシートが含まれる場合があります。');return {...result,pageCount,text,mode:'一太郎のページ描画（近似）'};
   }catch(e){if(pageIndex===0&&typeof text==='string')return {text,pageCount:1,warnings:['レイアウトを描画できないため、本文のみ表示します。']};throw e;}finally{editor?.free();}
  }
  throw new Error('未対応形式です。');

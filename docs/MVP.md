@@ -18,3 +18,5 @@ Chromium 141でPDF.js現行buildのMap#getOrInsertComputed非対応を確認（r
 
 ## 次段階
 JTDのページ描画はEZPZ File JTD v0.5.14の描画コードをMIT条件で再利用し、Worker上で実行する。ネットフォントなし、画像は限定されたラスター形式のみ、本文テキストも取得できる。描画不能時は本文表示にフォールバックする。TIFFは許可済みIFDのページ移動に対応。原本照合と実機試験は引き続き必要。
+
+EPSの非ゼロ原点は整数BoundingBoxの範囲内でtranslateを挿入して近似描画。CTMを初期化するプログラム等は不完全。合成正負原点を追加検証。TIFFの2ページ目と戻る操作、JTDの実際の非白色ピクセルもCIで検査する。

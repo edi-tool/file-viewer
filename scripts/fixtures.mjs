@@ -27,8 +27,19 @@ export function makeTiff() {
   for(let i=0;i<n;i++){const left=i%w<w/2;out[pixels+3*i]=left?255:0;out[pixels+3*i+2]=left?0:255;}
   return out;
 }
+export function makeMultiTiff(){
+ const first=makeTiff(),second=makeTiff(),shift=first.length-8;
+ first.writeUInt32LE(first.length,130);
+ for(const entry of [2,5]){const p=10+entry*12+8;second.writeUInt32LE(second.readUInt32LE(p)+shift,p);}
+ const pixels=second.length-64*64*3;
+ for(let i=pixels;i<second.length;i+=3){const red=second[i];second[i]=second[i+2];second[i+2]=red;}
+ return Buffer.concat([first,second.subarray(8)]);
+}
+export function makeShiftedEps(x=-20,y=10){
+ return b(`%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: ${x} ${y} ${x+64} ${y+64}\n%%EndComments\n1 0 0 setrgbcolor ${x} ${y} 32 64 rectfill\n0 0 1 setrgbcolor ${x+32} ${y} 32 64 rectfill\nshowpage\n%%EOF\n`);
+}
 export function makeEps(){return b('%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 64 64\n%%EndComments\n1 0 0 setrgbcolor 0 0 32 64 rectfill\n0 0 1 setrgbcolor 32 0 32 64 rectfill\nshowpage\n%%EOF\n');}
 export function makeBinaryEps(){const ps=makeEps(),tiff=makeTiff(),head=Buffer.alloc(30);head.set([197,208,211,198]);head.writeUInt32LE(30,4);head.writeUInt32LE(ps.length,8);head.writeUInt32LE(30+ps.length,20);head.writeUInt32LE(tiff.length,24);head.writeUInt16LE(65535,28);return Buffer.concat([head,ps,tiff]);}
-export function fixtures(){const bad=makeBinaryEps();bad.writeUInt32LE(0xffffffff,24);return {'two-colors.pdf':makePdf(),'pdf-compatible-candidate.ai':makePdf(),'composite.psd':makePsd(),'rgb.tiff':makeTiff(),'vector.eps':makeEps(),'binary-preview.eps':makeBinaryEps(),'invalid-preview.eps':bad,'wrong-extension.psd':makePdf(),'truncated.psd':b('8BPS')};}
+export function fixtures(){const bad=makeBinaryEps();bad.writeUInt32LE(0xffffffff,24);return {'two-colors.pdf':makePdf(),'pdf-compatible-candidate.ai':makePdf(),'composite.psd':makePsd(),'rgb.tiff':makeTiff(),'two-pages.tiff':makeMultiTiff(),'shifted.eps':makeShiftedEps(),'positive-origin.eps':makeShiftedEps(100,200),'vector.eps':makeEps(),'binary-preview.eps':makeBinaryEps(),'invalid-preview.eps':bad,'wrong-extension.psd':makePdf(),'truncated.psd':b('8BPS')};}
 export function writeFixtures(dir){mkdirSync(dir,{recursive:true});for(const [name,data] of Object.entries(fixtures()))writeFileSync(resolve(dir,name),data);}
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)writeFixtures(resolve(process.argv[2]||'generated-fixtures'));
