@@ -68,3 +68,17 @@ export function makeBinaryEps(){const ps=makeEps(),tiff=makeTiff(),head=Buffer.a
 export function fixtures(){const bad=makeBinaryEps();bad.writeUInt32LE(0xffffffff,24);return {'two-colors.pdf':makePdf(),'pdf-compatible-candidate.ai':makePdf(),'composite.psd':makePsd(),'rgb.tiff':makeTiff(),'deflate.tiff':makeDeflateTiff(1),'deflate-predictor.tiff':makeDeflateTiff(2),'deflate-overflow.tiff':makeDeflateTiff(2,true),'cmyk.tiff':makeColorTiff({cmyk:true}),'oriented.tiff':makeColorTiff({orientation:2}),'two-pages.tiff':makeMultiTiff(),'shifted.eps':makeShiftedEps(),'hires.eps':makeHiResEps(),'positive-origin.eps':makeShiftedEps(100,200),'vector.eps':makeEps(),'binary-preview.eps':makeBinaryEps(),'invalid-preview.eps':bad,'wrong-extension.psd':makePdf(),'truncated.psd':b('8BPS')};}
 export function writeFixtures(dir){mkdirSync(dir,{recursive:true});for(const [name,data] of Object.entries(fixtures()))writeFileSync(resolve(dir,name),data);}
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)writeFixtures(resolve(process.argv[2]||'generated-fixtures'));
+
+export function makeBmp(){
+ const w=64,h=64,stride=w*3,offset=54,out=Buffer.alloc(offset+stride*h);
+ out.write('BM');out.writeUInt32LE(out.length,2);out.writeUInt32LE(offset,10);out.writeUInt32LE(40,14);out.writeInt32LE(w,18);out.writeInt32LE(h,22);out.writeUInt16LE(1,26);out.writeUInt16LE(24,28);out.writeUInt32LE(stride*h,34);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const at=offset+y*stride+x*3;out[at]=x<w/2?0:255;out[at+2]=x<w/2?255:0;}return out;
+}
+export function makeNativeAi(){
+ return b(['%!PS-Adobe-3.0','%%Creator: Adobe Illustrator 28.0','%%AI8_CreatorVersion: 28.0','%%BoundingBox: 0 0 200 100','%AIArtboard: Main|0 0 200 100','0 1 1 0 k','10 10 m','190 10 l','190 90 l','10 90 l','h','f','%%EOF',''].join('\n'));
+}
+export function makePrivateAi(){
+ const source=makeNativeAi(),privateBytes=Buffer.concat([b('%AI12_CompressedData\n'),deflateSync(source)]),placeholder='BT /F1 12 Tf 10 50 Td (saved without PDF content) Tj ET\n';
+ const objects=[b('<< /Type /Catalog /Pages 2 0 R /PieceInfo << /Illustrator << /Private 4 0 R >> >> >>'),b('<< /Type /Pages /Count 1 /Kids [3 0 R] >>'),b('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Resources << /Font << /F1 8 0 R >> >> /Contents 7 0 R >>'),b('<< /NumBlock 1 /AIPrivateData1 5 0 R >>'),Buffer.concat([b(`<< /Length ${privateBytes.length} >>\nstream\n`),privateBytes,b('\nendstream')]),b('<< /Creator (Adobe Illustrator 28.0) >>'),b(`<< /Length ${b(placeholder).length} >>\nstream\n${placeholder}endstream`),b('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')];
+ let chunks=[b('%PDF-1.7\n')],length=chunks[0].length;const offsets=[];for(const [i,o] of objects.entries()){offsets.push(length);const x=Buffer.concat([b(`${i+1} 0 obj\n`),o,b('\nendobj\n')]);chunks.push(x);length+=x.length;}chunks.push(b(`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`+offsets.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R /Info 6 0 R >>\nstartxref\n${length}\n%%EOF\n`));return Buffer.concat(chunks);
+}
