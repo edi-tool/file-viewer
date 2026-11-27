@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {dimensions,fit,sizeCheck,pageCheck} from '../src/limits.mjs';import {imageDimensions} from '../src/image-header.mjs';
+test('bounds',()=>{assert.throws(()=>dimensions(4096,4096));assert.throws(()=>dimensions(0,1));assert.throws(()=>sizeCheck({size:0}));assert.throws(()=>pageCheck(501));assert.deepEqual(fit(10000,10000,2),{width:2828,height:2828});});
+test('PNG dimension preflight',()=>{let b=new Uint8Array(24),d=new DataView(b.buffer);d.setUint32(16,64);d.setUint32(20,128);assert.deepEqual(imageDimensions(b,'png'),{width:64,height:128});d.setUint32(20,999999);assert.throws(()=>imageDimensions(b,'png'));});
+test('GIF dimension preflight',()=>{const b=new Uint8Array(10);b[6]=64;b[8]=32;assert.deepEqual(imageDimensions(b,'gif'),{width:64,height:32});});
+test('JPEG dimension preflight',()=>{const b=Uint8Array.of(255,216,255,192,0,8,8,0,64,0,32,3);assert.deepEqual(imageDimensions(b,'jpeg'),{width:32,height:64});assert.throws(()=>imageDimensions(b.slice(0,7),'jpeg'));});
