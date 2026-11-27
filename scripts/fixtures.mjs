@@ -13,6 +13,13 @@ export function makePdf() {
   s+='xref\n0 5\n0000000000 65535 f \n'+offsets.slice(1).map(n=>String(n).padStart(10,'0')+' 00000 n \n').join('');
   return b(s+`trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
 }
+export function makeReaderPdf(count=12){
+ const objects=['<< /Type /Catalog /Pages 2 0 R >>',''];
+ const kids=[];
+ for(let i=0;i<count;i++){const page=objects.length+1,stream=page+1;kids.push(page+' 0 R');const rgb=i%2?'0 0 1':'1 0 0';const content=rgb+' rg 0 0 400 600 re f\n';objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 600] /Resources << >> /Contents ${stream} 0 R >>`,`<< /Length ${b(content).length} >>\nstream\n${content}endstream`);}
+ objects[1]=`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${count} >>`;
+ let s='%PDF-1.4\n';const offsets=[];objects.forEach((o,i)=>{offsets.push(b(s).length);s+=`${i+1} 0 obj\n${o}\nendobj\n`;});const xref=b(s).length;s+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`+offsets.map(n=>String(n).padStart(10,'0')+' 00000 n \n').join('');return b(s+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+}
 export function makePsd() {
   const w=64,h=64,n=w*h, out=Buffer.alloc(40+3*n);
   out.write('8BPS');out.writeUInt16BE(1,4);out.writeUInt16BE(3,12);out.writeUInt32BE(h,14);out.writeUInt32BE(w,18);out.writeUInt16BE(8,22);out.writeUInt16BE(3,24);

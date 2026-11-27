@@ -1,5 +1,6 @@
 import {LIMITS,fit,dimensions,pageCheck} from './limits.mjs';
 import {imageDimensions} from './image-header.mjs';
+import {createPageCache} from './page-cache.mjs';
 const modes={pdf:'PDF描画',ai:'PDF互換候補（作品データか要確認）',psd:'保存済み合成画像',tiff:'TIFF画像',eps:'埋め込みTIFFプレビュー',image:'画像表示',jtd:'本文のみ（レイアウト未再現）'};
 function canvasFrame(w,h,draw){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;try{draw(canvas.getContext('2d'));return {element:canvas,dispose(){canvas.width=canvas.height=0;canvas.remove();}};}catch(e){canvas.width=canvas.height=0;throw e;}}
 function abortError(){return new DOMException('処理を中止しました','AbortError');}
@@ -47,10 +48,12 @@ async function workerOpen(file,probe,{signal,limits}){
  const mode=first.mode||modes[probe.route],pageCount=pageCheck(first.pageCount??1,limits),warnings=first.warnings||[];
  let text=first.text;delete first.text;
  const scalable=probe.route==='jtd'||mode.startsWith('PostScript再描画');
- return {scalable,mode,pageCount,warnings,dispose(){first=null;text=undefined;},async renderPage(index,{scale,signal}){
+ const cache=createPageCache();
+ return {scalable,mode,pageCount,warnings,dispose(){first=null;text=undefined;cache.clear();},async renderPage(index,{scale,signal}){
   signal.throwIfAborted();
   const isJtd=probe.route==='jtd';
-  const result=index===0&&first&&(!scalable||scale===1)?first:await workerCall(file,probe,signal,limits,index,scalable?scale:1);
+  const workerScale=scalable?scale:1,key=index+':'+workerScale;
+  let result=cache.get(key);if(!result){if(index===0&&first&&workerScale===1){result=first;if(pageCount>1)first=null;}else result=await workerCall(file,probe,signal,limits,index,workerScale);signal.throwIfAborted();if(pageCount>1&&workerScale===1&&result.rgba){delete result.text;cache.put(key,result);}}
   signal.throwIfAborted();
   if(!result.rgba)throw Error('ページを描画できません。');
   const {width,height}=dimensions(result.width,result.height,limits),rgba=new Uint8ClampedArray(result.rgba);
