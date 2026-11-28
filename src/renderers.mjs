@@ -10,6 +10,7 @@ import {imageDimensions} from './image-header.mjs';
 import {createPageCache} from './page-cache.mjs';
 import {openNativeAi} from './ai-native.mjs';
 import {openText} from './text-preview.mjs';
+import {openSvg} from './svg-image.mjs';
 const modes={pdf:'PDF描画',ai:'PDF互換候補（作品データか要確認）',psd:'保存済み合成画像',tiff:'TIFF画像',eps:'埋め込みTIFFプレビュー',image:'画像表示',jtd:'本文のみ（レイアウト未再現）'};
 function canvasFrame(w,h,draw){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;try{draw(canvas.getContext('2d'));return {element:canvas,dispose(){canvas.width=canvas.height=0;canvas.remove();}};}catch(e){canvas.width=canvas.height=0;throw e;}}
 function abortError(){return new DOMException('処理を中止しました','AbortError');}
@@ -79,4 +80,5 @@ async function workerOpen(file,probe,{signal,limits}){
 export function adapterFor(probe){return {open(file,opts){const o={...opts,limits:opts.limits||LIMITS};if(probe.kind==='ai-postscript'||(probe.kind==='ai-pdf-candidate'&&probe.aiSource==='native'))return openNativeAi(file,o);
 if(probe.kind==='ai-pdf-candidate')return pdfOpen(file,probe.kind,o).catch(e=>{if(e.code!=='AI_PDF_PLACEHOLDER')throw e;return openNativeAi(file,o);});
 if(probe.route==='text')return openText(file,o);
+if(probe.route==='svg')return openSvg(file,o);
 if(probe.route==='image')return imageOpen(file,probe.kind,o);if(probe.route==='pdf')return pdfOpen(file,probe.kind,o);if(['psd','tiff','eps','jtd'].includes(probe.route))return workerOpen(file,probe,o);throw new Error('この形式は未対応、または破損しています。');}};}
