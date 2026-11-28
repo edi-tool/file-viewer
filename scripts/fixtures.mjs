@@ -84,3 +84,8 @@ export function makePrivateAi(algorithm='deflate'){
 }
 
 export function makePsb(){const psd=makePsd(),out=Buffer.alloc(psd.length+4);psd.copy(out,0,0,34);out.writeUInt16BE(2,4);psd.copy(out,42,38);return out;}
+
+export function makeSvg(kind='safe'){
+ const extra=kind==='external'?'<image href="https://example.com/tracker.png" x="0" y="0" width="64" height="64"/>':kind==='script'?'<script>globalThis.__svgExecuted=true</script>':'';
+ return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">${extra}<rect width="32" height="64" fill="#ff0000"/><rect x="32" width="32" height="64" fill="#0000ff"/></svg>`);
+}

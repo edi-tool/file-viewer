@@ -4,10 +4,10 @@
 - BMP: 非圧縮24/32bitの寸法・領域検査後、ブラウザ画像APIで表示。
 - TXT/CSV/TSV/MD/LOG: 2MiB上限、UTF-8優先/Shift_JIS、textContent。MarkdownやCSVの実行・HTML表示はしない。
 - AIT: AIと同じルート。PSBは既存の判定・描画接続があるが真正ファイル試験は未完。
+- SVG: 5MiB上限。直接DOMへ挿入せず、XMLとして事前検査してからBlob URLの画像コンテキストでCanvasへ描画する。DOCTYPE、script、foreignObject、イベント属性、SMILアニメーション、外部href、CSSの外部url()/@import/@keyframesを拒否する。SVG 2のsecure image processing mode（画像利用時はscript実行・外部参照が無効）に加え、アプリ側でも拒否する二重防御。参照: [SVG 2 Conformance Criteria](https://www.w3.org/TR/SVG/latest/conform.html), [MDN: SVG as an image](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/SVG_as_an_image)。
 ## 次の候補
 - IDML/ICML/INX: @file-viewer/renderer-design のページ表示を比較。INDD/INDT・XDは埋込プレビューと明示。MPL/WASM/フォント等の追加依存監査が必要。
 - XDW/XBD（DocuWorks）: 仕様・再配布可能なブラウザライブラリの調査を先行。未対応。
-- SVG: 静的画像としての隔離、外部参照・フィルタ・巨大寸法を検査後に導入。直接DOM挿入禁止。
 - Office/EPUB: 別途レンダラーを検討。書式再現・ZIP展開上限が必要。
 - TIFF: タイル、JPEG圧縮、16bit、ICC。EPS: 複雑なフォント、クリッピング、実ファイル照合。
 合成試験で成功しても真正業務ファイルの完全再現ではない。公開は既存の受入条件完了後。

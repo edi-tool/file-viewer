@@ -1,8 +1,8 @@
 # file-viewer（ファイル閲覧さん・仮称）
 
-出版・編集実務で受け取った PSD、AI、一太郎、EPS などを専用アプリなしで確認する統合ビュワーの開発プロジェクト。
+出版・編集実務で受け取った PSD、AI、一太郎、EPS、SVG などを専用アプリなしで確認する統合ビュワーの開発プロジェクト。
 
-**開発中：基本描画アダプターのブラウザ統合試験に成功。公開版ではありません。**
+**開発中：GitHub Pagesで試験公開中です。実業務ファイルでの完全再現は保証しません。**
 
 - 開発課題: [Issue #1](https://github.com/edi-tool/file-viewer/issues/1)
 - 元の課題: [edi-tool.github.io#12](https://github.com/edi-tool/edi-tool.github.io/issues/12)
@@ -14,7 +14,7 @@
 - [MVP実装・制約](docs/MVP.md)
 - [合成試料・安全性検証](docs/VALIDATION.md)
 
-公開予定: https://edi-tool.github.io/file-viewer/ （未公開）。
+試験公開: https://edi-tool.github.io/file-viewer/
 
 ## データの扱い
 
