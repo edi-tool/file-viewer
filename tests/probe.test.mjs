@@ -22,4 +22,5 @@ test('CFB does not prove JTD',()=>{const b=Uint8Array.of(208,207,17,224,161,177,
 test('compressed JTD candidate',()=>assert.equal(probe(t('unknown'),'a.jtdc').warning,'engine-must-validate'));
 test('unknown AI does not claim rendering',()=>assert.equal(probe(t('unknown'),'a.ai').route,'none'));
 test('native images',()=>{assert.equal(probe(Uint8Array.of(137,80,78,71,13,10,26,10),'a.png').kind,'png');assert.equal(probe(t('RIFF1234WEBP'),'a.webp').kind,'webp');});
+test('SVG is a validated candidate',()=>{assert.deepEqual(probe(t('<svg xmlns="http://www.w3.org/2000/svg"/>'),'a.svg'),{kind:'svg',route:'svg',extension:'svg',warning:'validate-svg-safety'});assert.equal(probe(t('%PDF-1.7'),'a.svg').route,'pdf');});
 test('reads bounded file prefix',async()=>{const f=new File([t('%PDF-1.7'),new Uint8Array(2000)],'x.pdf');assert.equal((await probeFile(f)).route,'pdf');});
