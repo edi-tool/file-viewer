@@ -35,6 +35,7 @@ export function probe(input, name = '') {
   if(starts(b,ascii('GIF87a'))||starts(b,ascii('GIF89a'))) return out('gif','image');
   if(starts(b,ascii('RIFF'))&&starts(b,ascii('WEBP'),8)) return out('webp','image');
   if(starts(b,ascii('BM'))) return out('bmp','image');
+  if(ext==='svg') return out('svg','svg',{warning:'validate-svg-safety'});
   if(jtdExt.has(ext)) return out('jtd-candidate','jtd',{container:starts(b,cfb)?'cfb':'unknown',warning:'engine-must-validate'});
   if(starts(b,cfb)) return out('cfb','none',{reason:'ambiguous-container'});
   if(isAi) return out('ai-unknown','none',{reason:'no-recognized-preview'});
